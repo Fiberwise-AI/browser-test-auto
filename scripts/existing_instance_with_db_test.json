@@ -1,0 +1,98 @@
+{
+  "script_name": "existing_instance_with_db_test",
+  "description": "Simple test against existing FiberWise instance with SQLite database",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "existing_instance_url": "http://localhost:6508",
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "verify_existing_users",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check what users already exist in the database",
+      "config": {
+        "queries": [
+          "SELECT id, username, email, is_active, created_at FROM users ORDER BY created_at DESC LIMIT 10;",
+          "SELECT COUNT(*) as total_users FROM users;",
+          "SELECT COUNT(*) as active_users FROM users WHERE is_active = 1;",
+          "SELECT id, name, user_id, created_at FROM api_keys ORDER BY created_at DESC LIMIT 5;",
+          "SELECT COUNT(*) as total_api_keys FROM api_keys;"
+        ],
+        "database_path": "{{existing_db_path}}"
+      }
+    },
+    {
+      "id": "register_test_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register a test user on existing instance",
+      "config": {
+        "users": [
+          {
+            "username": "testuser",
+            "email": "testuser@example.com",
+            "password": "TestPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_login",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with the test user",
+      "config": {
+        "username": "testuser",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "navigate_api_keys",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to API keys page",
+      "config": {
+        "url": "/settings/api-keys",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "create_api_key",
+      "type": "api_key",
+      "action": "create_api_key",
+      "description": "Create a new API key",
+      "config": {
+        "key_name": "Test API Key",
+        "scopes": ["read:all", "write:all"],
+        "capture_secret": "test_key_secret",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "verify_final_state",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify the final database state",
+      "config": {
+        "queries": [
+          "SELECT id, username, email FROM users WHERE email = 'testuser@example.com';",
+          "SELECT id, name, user_id, created_at FROM api_keys WHERE name = 'Test API Key';",
+          "SELECT COUNT(*) as total_users FROM users;",
+          "SELECT COUNT(*) as total_api_keys FROM api_keys;"
+        ],
+        "database_path": "{{existing_db_path}}"
+      }
+    }
+  ]
+}

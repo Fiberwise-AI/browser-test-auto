@@ -1,0 +1,28 @@
+{
+  "script_name": "check_agent_activations",  
+  "description": "Check agent_activations table for chat messages",
+  "version": "1.0",
+  "settings": {
+    "headless": true,
+    "use_existing_instance": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "check_activations",
+      "type": "command", 
+      "action": "verify_database",
+      "description": "Check all activation tables for chat messages",
+      "config": {
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_160750_dca735f5\\local_data\\fiberwise.db",
+        "queries": [
+          "SELECT COUNT(*) as total_agent_activations FROM agent_activations;",
+          "SELECT * FROM agent_activations ORDER BY created_at DESC LIMIT 3;",
+          "PRAGMA table_info(agent_activations);",
+          "SELECT COUNT(*) as total_activation_logs FROM activation_logs;",
+          "SELECT * FROM activation_logs ORDER BY created_at DESC LIMIT 2;"
+        ]
+      }
+    }
+  ]
+}

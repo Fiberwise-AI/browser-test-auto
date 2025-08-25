@@ -1,0 +1,67 @@
+{
+  "script_name": "simple_chat_test",
+  "description": "Simple test that fills input and clicks send button",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "start_existing_instance",
+      "type": "instance",
+      "action": "start_existing_instance",
+      "description": "Auto-start existing instance with chat app",
+      "config": {
+        "instance_id": "test_20250807_160750_dca735f5"
+      }
+    },
+    {
+      "id": "login_existing_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with existing user",
+      "config": {
+        "username": "appinstaller",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "navigate_to_chat_page",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to agent chat page",
+      "config": {
+        "url": "/agents/cf8c470e-0602-4a10-99de-40b5534698ea/chat",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "test_manual_interaction",
+      "type": "browser",
+      "action": "show_browser",
+      "description": "Show browser for manual testing",
+      "config": {
+        "message": "Browser is now visible. You can manually:\n1. Type a message in the chat input\n2. Click the send button\n3. Watch for the agent response\n\nPress Enter in terminal when done testing.",
+        "keep_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "final_screenshot",
+      "type": "browser",
+      "action": "take_screenshot",
+      "description": "Screenshot after manual testing",
+      "config": {
+        "name": "after_manual_chat_test"
+      }
+    }
+  ]
+}

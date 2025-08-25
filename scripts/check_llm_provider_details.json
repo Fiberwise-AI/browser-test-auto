@@ -1,0 +1,28 @@
+{
+  "script_name": "check_llm_provider_details",
+  "description": "Check the actual LLM provider configuration",
+  "version": "1.0",
+  "settings": {
+    "headless": true,
+    "use_existing_instance": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "check_provider_structure",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check the structure and content of LLM providers",
+      "config": {
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_160750_dca735f5\\local_data\\fiberwise.db",
+        "queries": [
+          "PRAGMA table_info(llm_providers);",
+          "SELECT * FROM llm_providers LIMIT 3;",
+          "PRAGMA table_info(activations);",
+          "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%activation%';",
+          "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%agent%';"
+        ]
+      }
+    }
+  ]
+}

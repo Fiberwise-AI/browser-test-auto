@@ -1,0 +1,52 @@
+{
+  "script_name": "simple_database_test",
+  "description": "Simple database connectivity and structure test",
+  "version": "1.0",
+  "settings": {
+    "headless": true,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "setup",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create and start temp FiberWise instance"
+    },
+    {
+      "id": "register_test_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register a test user for database verification",
+      "config": {
+        "users": [
+          {
+            "username": "dbtest",
+            "email": "dbtest@example.com",
+            "password": "TestPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_database_structure",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check database structure and data",
+      "config": {
+        "queries": [
+          "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;",
+          "SELECT COUNT(*) as total_users FROM users;",
+          "SELECT id, username, email, is_active FROM users ORDER BY created_at DESC LIMIT 5;",
+          "SELECT COUNT(*) as total_api_keys FROM api_keys;",
+          "PRAGMA table_info(users);",
+          "PRAGMA table_info(api_keys);"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    }
+  ]
+}

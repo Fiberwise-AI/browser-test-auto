@@ -1,0 +1,92 @@
+{
+    "script_name": "User Profile Test",
+    "description": "Registers two users, logs in as the first, verifies their profile page, and tests organization-scoped features.",
+    "settings": {
+        "headless": true,
+        "auto_cleanup": true
+    },
+    "steps": [
+        {
+            "id": "create_instance",
+            "type": "instance",
+            "action": "create_temp_instance",
+            "description": "Create a fresh, temporary instance for the test."
+        },
+        {
+            "id": "register_users",
+            "type": "browser",
+            "action": "register_multiple_users",
+            "description": "Register two users for the test.",
+            "config": {
+                "users": [
+                    {
+                        "username": "profile_user_1",
+                        "email": "profile1@test.com",
+                        "password": "Password123!",
+                        "display_name": "Profile User One"
+                    },
+                    {
+                        "username": "profile_user_2",
+                        "email": "profile2@test.com",
+                        "password": "Password123!",
+                        "display_name": "Profile User Two"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "login_user_1",
+            "type": "browser",
+            "action": "test_login",
+            "description": "Log in as the first user.",
+            "config": {
+                "username": "profile_user_1",
+                "password": "Password123!",
+                "keep_page_open": true
+            }
+        },
+        {
+            "id": "navigate_to_profile",
+            "type": "browser",
+            "action": "navigate_and_verify",
+            "description": "Navigate to the user's profile page and verify their display name is present.",
+            "config": {
+                "url": "/profile/profile_user_1",
+                "verify_text": "Profile User One",
+                "take_screenshot": true,
+                "keep_page_open": true
+            }
+        },
+        {
+            "id": "verify_organization_context",
+            "type": "browser", 
+            "action": "navigate_and_verify",
+            "description": "Verify user has organization context in navigation.",
+            "config": {
+                "url": "/",
+                "verify_text": "Organization:",
+                "verify_element": ".org-context",
+                "take_screenshot": true,
+                "keep_page_open": true
+            }
+        },
+        {
+            "id": "test_my_apps_organization_scoped",
+            "type": "browser",
+            "action": "navigate_and_verify", 
+            "description": "Test that My Apps shows organization-scoped apps.",
+            "config": {
+                "url": "/my-apps",
+                "verify_text": "organization_scoped",
+                "take_screenshot": true,
+                "keep_page_open": false
+            }
+        },
+        {
+            "id": "cleanup_instance",
+            "type": "instance",
+            "action": "cleanup_instance",
+            "description": "Clean up the temporary instance after the test."
+        }
+    ]
+}

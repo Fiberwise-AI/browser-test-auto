@@ -1,0 +1,94 @@
+{
+  "script_name": "simple_chat_click_test",
+  "description": "Click into the text box and send a message",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "start_existing_instance",
+      "type": "instance",
+      "action": "start_existing_instance",
+      "description": "Start existing instance",
+      "config": {
+        "instance_id": "test_20250807_160750_dca735f5"
+      }
+    },
+    {
+      "id": "login_existing_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with existing user",
+      "config": {
+        "username": "appinstaller",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "get_agent_id_from_db",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Get the chat agent ID from database",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          "SELECT agent_id, name FROM agents WHERE app_id IN (SELECT app_id FROM apps WHERE name LIKE '%chat%') ORDER BY created_at DESC LIMIT 1;"
+        ],
+        "capture_variable": "chat_agent_id"
+      }
+    },
+    {
+      "id": "navigate_to_chat_page",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to agent chat history page",
+      "config": {
+        "url": "/agents/{{chat_agent_id}}/chat",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "send_chat_message",
+      "type": "browser",
+      "action": "send_chat_message",
+      "description": "Click into text box and send message",
+      "config": {
+        "message": "Hello! This is a test message. Can you respond?",
+        "wait_for_response": true,
+        "timeout": 45000,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "verify_message_sent",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check if message created activation in database",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          "SELECT COUNT(*) as total_activations FROM activations WHERE agent_id = '{{chat_agent_id}}';",
+          "SELECT activation_id, status, input_data, created_at FROM activations WHERE agent_id = '{{chat_agent_id}}' ORDER BY created_at DESC LIMIT 1;"
+        ]
+      }
+    },
+    {
+      "id": "final_screenshot",
+      "type": "browser",
+      "action": "take_screenshot",
+      "description": "Final screenshot showing chat interaction",
+      "config": {
+        "name": "chat_interaction_complete"
+      }
+    }
+  ]
+}

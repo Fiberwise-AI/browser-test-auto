@@ -1,0 +1,52 @@
+{
+  "script_name": "test_api_key_with_email",
+  "description": "Test API key creation using email for login",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "login_with_email",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login using email instead of username",
+      "config": {
+        "username": "apitest@example.com",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "create_api_key",
+      "type": "api_key",
+      "action": "create_api_key",
+      "description": "Create API key after successful login",
+      "config": {
+        "username": "apitest@example.com",
+        "password": "TestPass123!",
+        "key_name": "My Email Test API Key",
+        "scopes": ["read", "write"],
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "verify_api_key",
+      "type": "api_key",
+      "action": "list_api_keys",
+      "description": "List API keys to verify creation",
+      "config": {
+        "username": "apitest@example.com",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    }
+  ]
+}

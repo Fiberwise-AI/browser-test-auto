@@ -1,0 +1,196 @@
+{
+  "script_name": "CLI Add Gemini Provider and Install App Test", 
+  "description": "Test adding a Google Gemini provider using fiber CLI, then install chat-activation app and verify both in browser",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "create_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create isolated FiberWise instance for testing"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user",
+      "config": {
+        "users": [
+          {
+            "username": "clitestuser",
+            "email": "clitest@example.com",
+            "password": "CliTest123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with test user",
+      "config": {
+        "username": "clitest@example.com",
+        "password": "CliTest123!",
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "create_api_key",
+      "type": "browser", 
+      "action": "create_api_key",
+      "description": "Create API key for CLI authentication",
+      "config": {
+        "key_name": "CLI Test Key",
+        "scopes": ["read:all", "write:all"],
+        "capture_secret": "CLI_API_KEY",
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "configure_cli",
+      "type": "command",
+      "action": "run_command",
+      "description": "Configure fiber CLI to connect to test instance",
+      "config": {
+        "command": "fiber account add-config --name \"cli-test-instance\" --api-key {{CLI_API_KEY}} --base-url {{base_url}} --set-default",
+        "working_directory": "c:/Users/david/fiberwise",
+        "timeout": 30
+      }
+    },
+    {
+      "id": "add_provider_cli",
+      "type": "command",
+      "action": "run_command",
+      "description": "Add Google provider using fiber CLI with smart instance targeting",
+      "config": {
+  "command": "fiber account add-provider --provider google --api-key {{ENV:GEMINI_API_KEY}} --name \"Google Gemini CLI Test\" --base-url https://generativelanguage.googleapis.com/v1beta --model gemini-1.5-pro --to-instance \"cli-test-instance\"",
+        "working_directory": "c:/Users/david/fiberwise",
+        "timeout": 30
+      }
+    },
+    {
+      "id": "verify_database_creation",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify provider was created in database via CLI",
+      "config": {
+        "queries": [
+          "SELECT name, provider_type, api_endpoint, is_active, created_by FROM llm_providers WHERE name = 'Google Gemini CLI Test';",
+          "SELECT COUNT(*) as total_providers FROM llm_providers;",
+          "SELECT provider_id, name, provider_type, configuration, created_at FROM llm_providers ORDER BY created_at DESC LIMIT 3;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "test_cli_api_key_storage",
+      "type": "command",
+      "action": "run_command",
+      "description": "Test that CLI properly stored API key in configuration JSON",
+      "config": {
+        "command": "python test_cli_provider_config.py \"{{instance_dir}}/local_data/fiberwise.db\" \"Google Gemini CLI Test\"",
+        "working_directory": "c:/Users/david/fiberwise/fiber-test-bin"
+      }
+    },
+    {
+      "id": "navigate_to_providers",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to LLM providers page",
+      "config": {
+        "url": "/settings/llm-providers",
+        "keep_page_open": true,
+        "expected_elements": [
+          "h1:has-text('LLM Provider API Keys')",
+          "button:has-text('Add Provider')"
+        ]
+      }
+    },
+    {
+      "id": "verify_provider_in_browser",
+      "type": "browser",
+      "action": "extract_page_info",
+      "description": "Verify CLI-created provider appears in browser",
+      "config": {
+        "expected_text": ["Google Gemini CLI Test"],
+        "take_screenshot": true,
+        "save_page_content": true
+      }
+    },
+    {
+      "id": "check_provider_details",
+      "type": "browser", 
+      "action": "wait_for_element",
+      "description": "Verify provider details are visible",
+      "config": {
+        "selector": "tr:has-text('Google Gemini CLI Test')",
+        "timeout": 5000,
+        "action_after_found": "screenshot"
+      }
+    },
+    {
+      "id": "install_chat_app",
+      "type": "command",
+      "action": "run_command", 
+      "description": "Install chat-activation app using fiber CLI",
+      "config": {
+        "command": "fiber install app chat-activation --to-instance \"cli-test-instance\"",
+        "working_directory": "c:/Users/david/fiberwise",
+        "timeout": 60
+      }
+    },
+    {
+      "id": "verify_app_installation_db",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify chat app was installed in database",
+      "config": {
+        "queries": [
+          "SELECT name, version FROM apps WHERE name LIKE '%chat%';",
+          "SELECT COUNT(*) as total_apps FROM apps;",
+          "SELECT app_id, name, description, created_at FROM apps ORDER BY created_at DESC LIMIT 3;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "verify_app_in_browser",
+      "type": "browser",
+      "action": "navigate_and_verify", 
+      "description": "Navigate to apps page and verify chat app appears",
+      "config": {
+        "url": "/manage/apps",
+        "keep_page_open": true,
+        "expected_elements": [
+          "h1:has-text('Apps')",
+          "*:has-text('chat')"
+        ],
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "final_database_check",
+      "type": "command", 
+      "action": "verify_database",
+      "description": "Final verification of provider and app persistence",
+      "config": {
+        "queries": [
+          "SELECT name, provider_type, api_endpoint, is_active FROM llm_providers WHERE name = 'Google Gemini CLI Test';",
+          "SELECT COUNT(*) as cli_providers FROM llm_providers WHERE name LIKE '%CLI Test%';",
+          "SELECT name, version FROM apps WHERE name LIKE '%chat%';",
+          "SELECT COUNT(*) as total_apps FROM apps;",
+          "SELECT provider_type, default_name FROM llm_provider_defaults WHERE provider_type = 'gemini';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    }
+  ]
+}

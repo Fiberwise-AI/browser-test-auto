@@ -1,0 +1,105 @@
+{
+  "script_name": "smart_existing_instance_test",
+  "description": "Smart test that auto-discovers existing instance settings by ID",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "start_existing_instance",
+      "type": "instance",
+      "action": "start_existing_instance",
+      "description": "Auto-start existing instance and discover settings",
+      "config": {
+        "instance_id": "test_20250807_160100_1908ae56"
+      }
+    },
+    {
+      "id": "register_new_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register a new test user on the existing instance",
+      "config": {
+        "users": [
+          {
+            "username": "smarttestuser",
+            "email": "smarttest@example.com",
+            "password": "TestPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_discovered_settings",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify auto-discovered database works",
+      "config": {
+        "queries": [
+          "SELECT id, username, email, is_active, created_at FROM users ORDER BY created_at DESC LIMIT 10;",
+          "SELECT COUNT(*) as total_users FROM users;",
+          "SELECT COUNT(*) as active_users FROM users WHERE is_active = 1;",
+          "SELECT id, name, user_id, created_at FROM api_keys ORDER BY created_at DESC LIMIT 5;",
+          "SELECT COUNT(*) as total_api_keys FROM api_keys;",
+          "SELECT name, version FROM apps ORDER BY created_at DESC LIMIT 3;"
+        ],
+        "database_path": "{{existing_db_path}}"
+      }
+    },
+    {
+      "id": "test_new_user_login",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with the newly registered user",
+      "config": {
+        "username": "smarttestuser",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "navigate_dashboard",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to dashboard to verify auth works",
+      "config": {
+        "url": "/",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "navigate_api_keys",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to API keys page",
+      "config": {
+        "url": "/settings/api-keys",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "verify_final_state",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Final verification with auto-discovered database",
+      "config": {
+        "queries": [
+          "SELECT COUNT(*) as total_users FROM users;",
+          "SELECT COUNT(*) as total_api_keys FROM api_keys;",
+          "SELECT COUNT(*) as total_apps FROM apps;",
+          "SELECT name FROM apps LIMIT 3;"
+        ],
+        "database_path": "{{existing_db_path}}"
+      }
+    }
+  ]
+}

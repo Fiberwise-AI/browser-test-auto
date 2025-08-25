@@ -1,0 +1,83 @@
+{
+  "script_name": "multi_user_registration",
+  "description": "Register multiple user accounts and verify them",
+  "version": "1.0",
+  "settings": {
+    "headless": true,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "setup_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Set up isolated FiberWise instance"
+    },
+    {
+      "id": "register_users",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register multiple user accounts",
+      "config": {
+        "users": [
+          {
+            "username": "demo_user_1",
+            "email": "demo1@example.com",
+            "password": "DemoPass123!"
+          },
+          {
+            "username": "demo_user_2", 
+            "email": "demo2@example.com",
+            "password": "DemoPass123!"
+          },
+          {
+            "username": "demo_user_3",
+            "email": "demo3@example.com", 
+            "password": "DemoPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_users_in_db",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify all users were registered in database",
+      "config": {
+        "queries": [
+          "SELECT id, username, email FROM users ORDER BY created_at;",
+          "SELECT COUNT(*) as total_users FROM users;",
+          "SELECT username FROM users WHERE username LIKE 'demo_user_%';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "test_login_user1",
+      "type": "browser", 
+      "action": "test_login",
+      "description": "Test login with first user",
+      "config": {
+        "username": "demo_user_1",
+        "password": "DemoPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "test_login_user2",
+      "type": "browser", 
+      "action": "test_login",
+      "description": "Test login with second user",
+      "config": {
+        "username": "demo_user_2",
+        "password": "DemoPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    }
+  ]
+}

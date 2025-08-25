@@ -1,0 +1,136 @@
+{
+  "script_name": "chat_message_user_isolation_test",
+  "description": "Test that chat messages and agent activations are properly isolated between users in the WebSocket system",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "start_existing_instance",
+      "type": "instance",
+      "action": "start_existing_instance",
+      "description": "Start existing instance with chat app for user isolation testing",
+      "config": {
+        "instance_id": "test_20250807_160750_dca735f5"
+      }
+    },
+    {
+      "id": "verify_baseline_activations",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check baseline activation count with user attribution",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          "SELECT COUNT(*) as total_activations FROM agent_activations;",
+          "SELECT u.username, COUNT(a.activation_id) as user_activation_count FROM users u LEFT JOIN agent_activations a ON u.id = a.created_by GROUP BY u.id ORDER BY user_activation_count DESC;",
+          "SELECT activation_id, agent_id, status, created_by, created_at FROM agent_activations ORDER BY created_at DESC LIMIT 3;"
+        ]
+      }
+    },
+    {
+      "id": "login_user1",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login as first user for isolation testing",
+      "config": {
+        "username": "appinstaller",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "navigate_to_chat_user1",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to chat page as user1",
+      "config": {
+        "url": "/agents/cf8c470e-0602-4a10-99de-40b5534698ea/chat",
+        "take_screenshot": true,
+        "keep_page_open": true,
+        "wait_for_selector": "#message-input"
+      }
+    },
+    {
+      "id": "check_websocket_connection",
+      "type": "browser",
+      "action": "verify_page_content",
+      "description": "Verify WebSocket connection established for user-scoped channel",
+      "config": {
+        "checks": [
+          {
+            "type": "element_present",
+            "selector": "#message-input"
+          },
+          {
+            "type": "element_present", 
+            "selector": "#send-button"
+          },
+          {
+            "type": "url_contains",
+            "value": "/chat"
+          }
+        ],
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "send_test_message_user1",
+      "type": "browser",
+      "action": "send_chat_message",
+      "description": "Send chat message as user1 to test user-scoped activation",
+      "config": {
+        "message": "Hello from user1 - testing WebSocket isolation",
+        "wait_for_response": true,
+        "timeout": 30,
+        "take_screenshot_after": true
+      }
+    },
+    {
+      "id": "verify_user1_activation",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify activation created with proper user attribution",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          "SELECT activation_id, agent_id, status, created_by, created_at FROM agent_activations WHERE created_by = (SELECT id FROM users WHERE username = 'appinstaller') ORDER BY created_at DESC LIMIT 1;",
+          "SELECT COUNT(*) as user1_activations FROM agent_activations WHERE created_by = (SELECT id FROM users WHERE username = 'appinstaller');"
+        ]
+      }
+    },
+    {
+      "id": "verify_websocket_user_scoping",
+      "type": "browser",
+      "action": "verify_chat_isolation",
+      "description": "Verify that WebSocket broadcasts are user-scoped (manual verification step)",
+      "config": {
+        "message": "Manual check: Verify that only user1 (appinstaller) receives activation updates for their messages",
+        "take_screenshot": true,
+        "expected_behavior": "User-scoped WebSocket channels should isolate activation broadcasts",
+        "isolation_test": true
+      }
+    },
+    {
+      "id": "final_user_isolation_check",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Final check of user-scoped activation system",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          "SELECT u.username, u.id, COUNT(a.activation_id) as total_activations FROM users u LEFT JOIN agent_activations a ON u.id = a.created_by GROUP BY u.id ORDER BY total_activations DESC;",
+          "SELECT a.activation_id, u.username as activated_by, a.status, a.created_at FROM agent_activations a JOIN users u ON a.created_by = u.id ORDER BY a.created_at DESC LIMIT 5;",
+          "SELECT k.key_id, u.username as key_owner, k.app_id, k.agent_id FROM agent_api_keys k JOIN users u ON k.created_by = u.id ORDER BY k.created_at DESC LIMIT 3;"
+        ]
+      }
+    }
+  ]
+}

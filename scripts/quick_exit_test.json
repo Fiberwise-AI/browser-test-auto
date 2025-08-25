@@ -1,0 +1,47 @@
+{
+  "script_name": "quick_exit_test",
+  "description": "Quick test to verify no terminal hanging with proper cleanup",
+  "version": "1.0",
+  "settings": {
+    "headless": true,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": false,
+    "auto_cleanup": true,
+    "force_exit_on_complete": true
+  },
+  "steps": [
+    {
+      "id": "setup",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create temp instance quickly"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user",
+      "config": {
+        "users": [
+          {
+            "username": "quickuser",
+            "email": "quick@example.com",
+            "password": "TestPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_completion",
+      "type": "command",
+      "action": "run_command",
+      "description": "Verify test completed",
+      "config": {
+        "command": "echo \"✅ Quick test completed successfully - should exit cleanly!\"",
+        "capture_output": true,
+        "timeout": 2
+      }
+    }
+  ]
+}

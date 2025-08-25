@@ -1,0 +1,203 @@
+{
+  "script_name": "llm_system_comprehensive_test",
+  "description": "Comprehensive test of LLM providers page functionality and CLI commands",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "create_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create isolated test environment for LLM testing"
+    },
+    {
+      "id": "start_instance",
+      "type": "instance", 
+      "action": "start_instance",
+      "description": "Start FiberWise instance with database migrations"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user for LLM provider testing",
+      "config": {
+        "users": [
+          {
+            "username": "llmtester",
+            "email": "llmtest@example.com",
+            "password": "TestPassword123!",
+            "first_name": "LLM",
+            "last_name": "Tester"
+          }
+        ],
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with test user",
+      "config": {
+        "username": "llmtest@example.com",
+        "password": "TestPassword123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "verify_database_setup",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify database has LLM provider tables",
+      "config": {
+        "queries": [
+          "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%llm%';",
+          "SELECT COUNT(*) FROM llm_provider_defaults;",
+          "SELECT provider_type, default_name FROM llm_provider_defaults;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "test_llm_api_endpoints",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Test LLM provider API endpoints with authentication",
+      "config": {
+        "url": "/api/v1/llm-provider-defaults",
+        "expected_content": "provider_type",
+        "take_screenshot": true,
+        "api_test": true,
+        "expect_authenticated": true
+      }
+    },
+    {
+      "id": "navigate_to_llm_providers",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to LLM providers settings page",
+      "config": {
+        "url": "/settings/llm-providers",
+        "wait_for_element": "llm-providers-page",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "test_fiber_cli_help",
+      "type": "command",
+      "action": "run_command",
+      "description": "Test fiber account --help CLI command",
+      "config": {
+        "command": "fiber account --help",
+        "working_directory": "{{workspace_root}}",
+        "expected_output_contains": [
+          "Manage Fiberwise account configurations",
+          "add-provider", 
+          "list-providers",
+          "login",
+          "oauth"
+        ]
+      }
+    },
+    {
+      "id": "test_fiber_add_provider_help", 
+      "type": "command",
+      "action": "run_command",
+      "description": "Test fiber account add-provider --help command",
+      "config": {
+        "command": "fiber account add-provider --help",
+        "working_directory": "{{workspace_root}}",
+        "expected_output_contains": [
+          "Add a new LLM provider",
+          "api-key"
+        ]
+      }
+    },
+    {
+      "id": "test_fiber_list_providers",
+      "type": "command", 
+      "action": "run_command",
+      "description": "Test fiber account list-providers command",
+      "config": {
+        "command": "fiber account list-providers",
+        "working_directory": "{{workspace_root}}",
+        "allow_error": true
+      }
+    },
+    {
+      "id": "verify_provider_defaults_loaded",
+      "type": "browser",
+      "action": "wait_for_element",
+      "description": "Wait for LLM provider defaults to load in the UI",
+      "config": {
+        "selector": "llm-providers-page",
+        "shadow_selector": "#add-provider",
+        "condition": "visible",
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "test_add_provider_flow",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Test adding a new LLM provider",
+      "config": {
+        "interactions": [
+          {
+            "action": "click",
+            "selector": "llm-providers-page",
+            "shadow_selector": "#add-provider"
+          },
+          {
+            "action": "wait",
+            "selector": "llm-providers-page", 
+            "shadow_selector": "#provider-name"
+          },
+          {
+            "action": "select_option",
+            "selector": "llm-providers-page",
+            "shadow_selector": "#provider-type",
+            "value": "openai"
+          },
+          {
+            "action": "type",
+            "selector": "llm-providers-page",
+            "shadow_selector": "#provider-name",
+            "text": "Test OpenAI Provider"
+          },
+          {
+            "action": "type",
+            "selector": "llm-providers-page",
+            "shadow_selector": "#api-key",
+            "text": "sk-test1234567890abcdef"
+          }
+        ],
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "verify_final_state",
+      "type": "command",
+      "action": "verify_database", 
+      "description": "Final verification of system state",
+      "config": {
+        "queries": [
+          "SELECT COUNT(*) as user_count FROM users;",
+          "SELECT COUNT(*) as provider_defaults_count FROM llm_provider_defaults;",
+          "SELECT email, is_active FROM users WHERE email = 'llmtest@example.com';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    }
+  ]
+}

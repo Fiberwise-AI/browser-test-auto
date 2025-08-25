@@ -1,0 +1,63 @@
+{
+  "script_name": "Quick Instance Start and Chat Test",
+  "description": "Start instance and test LLM agent chat",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "existing_instance_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_144251_3cf1735e",
+    "auto_cleanup": false,
+    "take_screenshots": true
+  },
+  "steps": [
+    {
+      "id": "start_existing_instance",
+      "type": "instance",
+      "action": "start_existing_instance",
+      "description": "Start the existing instance with our fixed agent",
+      "config": {
+        "instance_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_144251_3cf1735e"
+      }
+    },
+    {
+      "id": "navigate_to_chat",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to agent chat page", 
+      "config": {
+        "url": "/agents/f9d5d12d-7bbf-4dee-9ee9-6938ee5396bb/chat",
+        "wait_for": [
+          { "selector": "#message-input" },
+          { "selector": "#send-button" }
+        ],
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "send_test_message",
+      "type": "browser",
+      "action": "send_chat_message",
+      "description": "Send a test message to the LLM agent",
+      "config": {
+        "message": "Hello! Can you explain what type of agent you are?",
+        "take_screenshot": true,
+        "wait_after_send": 10000
+      }
+    },
+    {
+      "id": "check_activation_results",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check activation results",
+      "config": {
+        "queries": [
+          "SELECT activation_id, agent_id, status, created_at FROM agent_activations ORDER BY created_at DESC LIMIT 3;",
+          "SELECT * FROM agents WHERE agent_id = 'f9d5d12d-7bbf-4dee-9ee9-6938ee5396bb';",
+          "SELECT COUNT(*) as worker_processes FROM agent_activations WHERE status = 'processing';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    }
+  ]
+}

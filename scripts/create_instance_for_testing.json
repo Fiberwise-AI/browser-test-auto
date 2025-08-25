@@ -1,0 +1,51 @@
+{
+  "script_name": "Create Instance for Testing",
+  "description": "Create a simple instance with user and keep it running for testing",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "create_user",
+      "type": "browser",
+      "action": "register_user",
+      "description": "Create a test user",
+      "config": {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "TestPass123!",
+        "first_name": "Test",
+        "last_name": "User",
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser", 
+      "action": "test_login",
+      "description": "Login to verify user works",
+      "config": {
+        "username": "testuser",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "keep_instance_alive",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Just verify database to keep instance alive",
+      "config": {
+        "queries": [
+          "SELECT id, username, email FROM users LIMIT 1;"
+        ]
+      }
+    }
+  ]
+}

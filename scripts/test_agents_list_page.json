@@ -1,0 +1,246 @@
+{
+  "script_name": "test_agents_list_page",
+  "description": "Test the agents list page functionality - navigation, display, and interactions",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": true,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "setup_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create and start temporary FiberWise instance for testing"
+    },
+    {
+      "id": "register_test_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user for agents page testing",
+      "config": {
+        "headless": true,
+        "users": [
+          {
+            "username": "agent_tester",
+            "email": "agent_test@example.com",
+            "password": "AgentTest123!",
+            "first_name": "Agent",
+            "last_name": "Tester"
+          }
+        ]
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with test user credentials",
+      "config": {
+        "username": "agent_tester",
+        "password": "AgentTest123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "navigate_to_agents",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to the agents list page",
+      "config": {
+        "url": "/agents",
+        "take_screenshot": true,
+        "keep_page_open": true,
+        "wait_for_selector": "agent-list-page",
+        "timeout": 10000
+      }
+    },
+    {
+      "id": "verify_page_elements",
+      "type": "browser",
+      "action": "verify_page_elements",
+      "description": "Verify that key elements are present on the agents page",
+      "config": {
+        "elements": [
+          {
+            "selector": "agent-list-page",
+            "description": "Agent list page component",
+            "should_exist": true
+          },
+          {
+            "selector": "h1",
+            "description": "Page title",
+            "should_contain": "Agents Library"
+          },
+          {
+            "selector": ".create-agent-btn",
+            "description": "Create agent button",
+            "should_exist": true
+          }
+        ],
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "check_agents_grid",
+      "type": "browser",
+      "action": "analyze_agents_display",
+      "description": "Analyze how agents are displayed in the grid",
+      "config": {
+        "check_for_agents": true,
+        "verify_agent_cards": true,
+        "take_screenshot": true,
+        "analyze_layout": true
+      }
+    },
+    {
+      "id": "test_create_button",
+      "type": "browser",
+      "action": "test_ui_interaction",
+      "description": "Test the create agent button functionality",
+      "config": {
+        "action_type": "hover",
+        "selector": ".create-agent-btn",
+        "take_screenshot": true,
+        "verify_hover_effect": true
+      }
+    },
+    {
+      "id": "check_empty_state",
+      "type": "browser",
+      "action": "verify_empty_state",
+      "description": "Check if empty state is displayed when no agents exist",
+      "config": {
+        "empty_state_selector": ".empty-state",
+        "empty_message": "No agents found",
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "verify_api_calls",
+      "type": "browser",
+      "action": "monitor_network_requests",
+      "description": "Monitor network requests to verify API calls",
+      "config": {
+        "monitor_duration": 5000,
+        "expected_requests": [
+          {
+            "url": "/api/v1/agents",
+            "method": "GET",
+            "should_succeed": true
+          }
+        ],
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "test_responsive_design",
+      "type": "browser",
+      "action": "test_responsive_layout",
+      "description": "Test agents page responsive design at different screen sizes",
+      "config": {
+        "viewports": [
+          {"width": 1920, "height": 1080, "name": "desktop"},
+          {"width": 768, "height": 1024, "name": "tablet"},
+          {"width": 375, "height": 667, "name": "mobile"}
+        ],
+        "take_screenshots": true,
+        "verify_grid_layout": true
+      }
+    },
+    {
+      "id": "check_accessibility",
+      "type": "browser",
+      "action": "accessibility_audit",
+      "description": "Run accessibility audit on the agents page",
+      "config": {
+        "check_aria_labels": true,
+        "check_keyboard_navigation": true,
+        "check_color_contrast": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "verify_database_agents",
+      "type": "database",
+      "action": "verify_records",
+      "description": "Verify agent records in the database",
+      "config": {
+        "queries": [
+          {
+            "name": "count_agents",
+            "sql": "SELECT COUNT(*) as agent_count FROM agents",
+            "description": "Count total agents in database"
+          },
+          {
+            "name": "system_agents",
+            "sql": "SELECT COUNT(*) as system_agents FROM agents WHERE is_system = 1",
+            "description": "Count system agents"
+          },
+          {
+            "name": "active_agents", 
+            "sql": "SELECT name, version, is_system, is_active FROM agents ORDER BY name",
+            "description": "List all agents with basic info"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_page_performance",
+      "type": "browser",
+      "action": "performance_audit",
+      "description": "Measure page load performance",
+      "config": {
+        "metrics": [
+          "first_contentful_paint",
+          "largest_contentful_paint", 
+          "cumulative_layout_shift",
+          "time_to_interactive"
+        ],
+        "take_screenshot": true,
+        "generate_report": true
+      }
+    },
+    {
+      "id": "analyze_console_logs",
+      "type": "browser",
+      "action": "check_console_logs",
+      "description": "Check browser console for errors or warnings",
+      "config": {
+        "check_errors": true,
+        "check_warnings": true,
+        "ignore_known_issues": [
+          "favicon.ico 404"
+        ]
+      }
+    },
+    {
+      "id": "final_verification",
+      "type": "browser",
+      "action": "capture_final_state",
+      "description": "Capture final state of the agents page",
+      "config": {
+        "take_full_page_screenshot": true,
+        "save_page_html": true,
+        "export_context_data": true
+      }
+    },
+    {
+      "id": "analyze_logs",
+      "type": "command",
+      "action": "analyze_server_logs",
+      "description": "Analyze server logs for any issues during the test",
+      "config": {
+        "log_types": ["error", "warning", "info"],
+        "check_auth_patterns": true,
+        "check_api_patterns": true,
+        "include_performance": true,
+        "generate_summary": true
+      }
+    }
+  ]
+}

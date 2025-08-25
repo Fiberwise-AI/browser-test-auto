@@ -1,0 +1,83 @@
+{
+  "script_name": "API Key Test Only",
+  "description": "Test only API key creation to debug UI",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "create_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create isolated FiberWise instance for testing"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user",
+      "config": {
+        "users": [
+          {
+            "username": "clitestuser",
+            "email": "clitest@example.com",
+            "password": "CliTest123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with test user",
+      "config": {
+        "username": "clitest@example.com",
+        "password": "CliTest123!",
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "create_api_key",
+      "type": "browser",
+      "action": "create_api_key",
+      "description": "Create API key for CLI authentication",
+      "config": {
+        "key_name": "CLI Test Key",
+        "scopes": [
+          "read:all",
+          "write:all"
+        ],
+        "capture_secret": "CLI_API_KEY",
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "configure_cli",
+      "type": "command",
+      "action": "run_command",
+      "description": "Configure fiber CLI to connect to test instance",
+      "config": {
+        "command": "fiber account add-config --name \"cli-test-instance\" --api-key {{CLI_API_KEY}} --base-url {{base_url}} --set-default",
+        "working_directory": "c:/Users/david/fiberwise",
+        "timeout": 30
+      }
+    },
+    {
+      "id": "add_provider_cli",
+      "type": "command",
+      "action": "run_command",
+      "description": "Add Google provider using fiber CLI with smart instance targeting",
+      "config": {
+        "command": "fiber account add-provider --provider google --api-key {{ENV:GEMINI_API_KEY}} --name \"Google Gemini CLI Test\" --base-url https://generativelanguage.googleapis.com/v1beta --model gemini-1.5-pro --to-instance \"cli-test-instance\"",
+        "working_directory": "c:/Users/david/fiberwise",
+        "timeout": 30
+      }
+    }
+  ]
+}

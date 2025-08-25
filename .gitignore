@@ -1,0 +1,9 @@
+__pycache__/*
+temp-instances/isolated_server/*
+demo_sessions/*
+temp-instances/*
+.aider*
+.env
+**/__pycache__/
+**/*.pyc
+**/bin/

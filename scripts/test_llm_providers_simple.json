@@ -1,0 +1,176 @@
+{
+  "script_name": "Simple LLM Providers Test",
+  "description": "Simple test for LLM providers Add button functionality",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "create_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create isolated FiberWise instance for testing"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user for LLM provider testing",
+      "config": {
+        "users": [
+          {
+            "username": "llmtestuser",
+            "email": "llmtest@example.com",
+            "password": "LLMTest123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login", 
+      "description": "Login with test user",
+      "config": {
+        "username": "llmtest@example.com",
+        "password": "LLMTest123!",
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "navigate_to_llm_providers",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to LLM providers settings page",
+      "config": {
+        "url": "/settings/llm-providers",
+        "keep_page_open": true,
+        "expected_elements": [
+          "h1:has-text('LLM Providers')",
+          "button:has-text('Add Provider')"
+        ]
+      }
+    },
+    {
+      "id": "test_add_provider_button",
+      "type": "browser",
+      "action": "interact_with_elements",
+      "description": "Test Add Provider button functionality",
+      "config": {
+        "interactions": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Add Provider')",
+            "description": "Click Add Provider button"
+          },
+          {
+            "action": "wait",
+            "duration": 2000,
+            "description": "Wait for form to appear"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_provider_defaults_api",
+      "type": "command",
+      "action": "run_command",
+      "description": "Test that provider defaults API is working",
+      "config": {
+        "command": "curl -s http://localhost:{{port}}/api/v1/llm-provider-defaults"
+      }
+    },
+    {
+      "id": "fill_provider_form",
+      "type": "browser",
+      "action": "interact_with_elements",
+      "description": "Fill out provider form",
+      "config": {
+        "interactions": [
+          {
+            "action": "fill",
+            "selector": "input[name='name'], input#provider-name, input[placeholder*='name']",
+            "value": "Test OpenAI Provider",
+            "description": "Fill provider name"
+          },
+          {
+            "action": "select",
+            "selector": "select[name='provider_type'], select#provider-type",
+            "value": "openai",
+            "description": "Select OpenAI provider type"
+          },
+          {
+            "action": "wait",
+            "duration": 2000,
+            "description": "Wait for defaults to load"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='api_key'], input#api-key, input[placeholder*='API key']",
+            "value": "sk-test123456789abcdef",
+            "description": "Fill API key"
+          }
+        ]
+      }
+    },
+    {
+      "id": "save_provider",
+      "type": "browser",
+      "action": "interact_with_elements",
+      "description": "Save the provider",
+      "config": {
+        "interactions": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Save'), button:has-text('Create'), button[type='submit']",
+            "description": "Click save button"
+          },
+          {
+            "action": "wait",
+            "duration": 3000,
+            "description": "Wait for save to complete"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_provider_created",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify provider was created and API key is stored correctly",
+      "config": {
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db",
+        "queries": [
+          "SELECT name, provider_type, configuration FROM llm_providers WHERE name = 'Test OpenAI Provider';"
+        ]
+      }
+    },
+    {
+      "id": "test_configuration_parsing",
+      "type": "command",
+      "action": "run_command", 
+      "description": "Test that API key was saved in configuration JSON (our fix validation)",
+      "config": {
+        "command": "python c:/Users/david/fiberwise/fiber-test-bin/test_provider_config.py \"{{instance_dir}}/local_data/fiberwise.db\" \"Test OpenAI Provider\""
+      }
+    },
+    {
+      "id": "test_provider_configuration_system",
+      "type": "command", 
+      "action": "verify_database",
+      "description": "Test the provider configuration parsing system we fixed",
+      "config": {
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db",
+        "queries": [
+          "SELECT COUNT(*) as total_providers FROM llm_providers;",
+          "SELECT name, provider_type, is_active, configuration FROM llm_providers WHERE is_active = 1;"
+        ]
+      }
+    }
+  ]
+}

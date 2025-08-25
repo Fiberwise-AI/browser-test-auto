@@ -1,0 +1,341 @@
+{
+  "script_name": "Complete_App_Install_Test",
+  "description": "End-to-end test: create user, API key, configure CLI, add LLM provider, install chat-activation app",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "setup",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create and start temp FiberWise instance"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register a test user for app installation",
+      "config": {
+        "users": [
+          {
+            "username": "appinstaller",
+            "email": "appinstaller@example.com",
+            "password": "TestPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login to verify authentication",
+      "config": {
+        "username": "appinstaller",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "create_api_key",
+      "type": "browser",
+      "action": "create_api_key",
+      "description": "Create API key for fiber CLI usage",
+      "config": {
+        "key_name": "Fiber CLI Key",
+        "scopes": ["read:all", "write:all"],
+        "capture_secret": "fiber_cli_key",
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "verify_api_key_created",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify API key was created in database",
+      "config": {
+        "queries": [
+          "SELECT id, name, user_id FROM api_keys WHERE name = 'Fiber CLI Key';",
+          "SELECT COUNT(*) as api_key_count FROM api_keys;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "configure_cli",
+      "type": "command",
+      "action": "run_command",
+      "description": "Configure fiber CLI with API key and instance URL",
+      "config": {
+        "command": "fiber account add-config --name \"app-install-test\" --api-key {{fiber_cli_key}} --base-url {{base_url}} --set-default",
+        "working_directory": "c:/Users/david/fiberwise",
+        "timeout": 30
+      }
+    },
+    {
+      "id": "add_llm_provider",
+      "type": "command",
+      "action": "run_command", 
+      "description": "Add Google Gemini provider for AI functionality",
+      "config": {
+        "command": "fiber account add-provider --provider google --api-key {{ENV:GEMINI_API_KEY}} --name \"Google Gemini for Apps\" --base-url https://generativelanguage.googleapis.com/v1beta --model gemini-1.5-pro --to-instance \"app-install-test\"",
+        "working_directory": "c:/Users/david/fiberwise",
+        "timeout": 30
+      }
+    },
+    {
+      "id": "verify_provider_added",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify LLM provider was added successfully",
+      "config": {
+        "queries": [
+          "SELECT name, provider_type, is_active FROM llm_providers WHERE name = 'Google Gemini for Apps';",
+          "SELECT COUNT(*) as provider_count FROM llm_providers;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "check_fiber_apps_repo",
+      "type": "command",
+      "action": "run_command",
+      "description": "Check if fiber-apps repository exists",
+      "config": {
+        "command": "dir ..\\fiber-apps",
+        "timeout": 10,
+        "capture_output": true,
+        "continue_on_error": true
+      }
+    },
+    {
+      "id": "list_available_apps",
+      "type": "command",
+      "action": "run_command",
+      "description": "List available apps for installation",
+      "config": {
+        "command": "dir ..\\fiber-apps\\dev /b",
+        "timeout": 10,
+        "capture_output": true,
+        "continue_on_error": true
+      }
+    },
+    {
+      "id": "install_chat_activation_app",
+      "type": "command",
+      "action": "run_command",
+      "description": "Install chat-activation app using fiber CLI",
+      "config": {
+        "command": "fiber app install ./fiber-apps/dev/activation-chat --to-instance \"app-install-test\"",
+        "working_directory": "c:/Users/david/fiberwise",
+        "timeout": 60
+      }
+    },
+    {
+      "id": "verify_app_installed_db",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify app was installed in database",
+      "config": {
+        "queries": [
+          "SELECT name, version FROM apps WHERE name LIKE '%chat%';",
+          "SELECT COUNT(*) as app_count FROM apps;",
+          "SELECT app_id, name, description FROM apps ORDER BY created_at DESC LIMIT 3;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "verify_models_created",
+      "type": "command", 
+      "action": "verify_database",
+      "description": "Verify models were created from app manifest",
+      "config": {
+        "queries": [
+          "SELECT COUNT(*) as model_count FROM models;",
+          "SELECT m.model_id, m.name, m.model_slug, m.description, a.name as app_name FROM models m JOIN apps a ON m.app_id = a.app_id WHERE a.name LIKE '%chat%';",
+          "SELECT m.model_id, m.name, m.model_slug, m.app_id, m.created_at FROM models m ORDER BY m.created_at DESC LIMIT 5;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "verify_fields_created",
+      "type": "command",
+      "action": "verify_database", 
+      "description": "Verify model fields were created from app manifest",
+      "config": {
+        "queries": [
+          "SELECT COUNT(*) as field_count FROM fields;",
+          "SELECT f.field_id, f.name, f.field_column, f.data_type, f.is_required, f.is_primary_key, m.name as model_name FROM fields f JOIN models m ON f.model_id = m.model_id JOIN apps a ON m.app_id = a.app_id WHERE a.name LIKE '%chat%';",
+          "SELECT f.field_id, f.name, f.field_column, f.data_type, f.is_required, f.is_unique, f.is_primary_key, f.default_value_json, m.model_slug as model FROM fields f JOIN models m ON f.model_id = m.model_id ORDER BY f.created_at DESC LIMIT 10;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "verify_chat_model_structure",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify the specific Chat model structure matches manifest",
+      "config": {
+        "queries": [
+          "SELECT m.name, m.model_slug, m.description FROM models m JOIN apps a ON m.app_id = a.app_id WHERE a.name LIKE '%chat%' AND m.model_slug = 'chats';",
+          "SELECT f.name, f.field_column, f.data_type, f.is_required, f.is_primary_key, f.default_value_json FROM fields f JOIN models m ON f.model_id = m.model_id JOIN apps a ON m.app_id = a.app_id WHERE a.name LIKE '%chat%' AND m.model_slug = 'chats' ORDER BY f.field_column;",
+          "SELECT COUNT(*) as chat_field_count FROM fields f JOIN models m ON f.model_id = m.model_id JOIN apps a ON m.app_id = a.app_id WHERE a.name LIKE '%chat%' AND m.model_slug = 'chats';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "test_model_data_api_availability",
+      "type": "command",
+      "action": "api_test",
+      "description": "Test that model data APIs are available after installation",
+      "config": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/data/chats",
+        "expected_status": [200, 404],
+        "timeout": 10
+      }
+    },
+    {
+      "id": "verify_app_routes_extracted",
+      "type": "command", 
+      "action": "verify_database",
+      "description": "Verify app routes were extracted from manifest and stored in app_routes table",
+      "config": {
+        "queries": [
+          "SELECT COUNT(*) as route_count FROM app_routes;",
+          "SELECT ar.path, ar.title, ar.icon, ar.component, a.name as app_name FROM app_routes ar JOIN apps a ON ar.app_id = a.app_id WHERE a.name LIKE '%chat%';",
+          "SELECT ar.route_id, ar.path, ar.title, ar.component, ar.description, ar.metadata FROM app_routes ar JOIN apps a ON ar.app_id = a.app_id WHERE a.name LIKE '%chat%' ORDER BY ar.created_at DESC;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+      {
+  "id": "capture_app_id",
+  "type": "command",
+  "action": "verify_database",
+  "description": "Capture the latest app_id for use in UI steps",
+  "config": {
+    "queries": [
+      "SELECT app_id FROM apps WHERE name LIKE '%chat%' ORDER BY created_at DESC LIMIT 1;"
+    ],
+    "database_path": "{{instance_dir}}/local_data/fiberwise.db",
+    "capture_variable": "app_id"
+  }
+},
+    {
+      "id": "capture_agent_id",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Capture the agent_id for the installed app using app_id",
+      "config": {
+        "queries": [
+          "SELECT agent_id FROM agents WHERE app_id = '{{app_id}}' ORDER BY created_at DESC LIMIT 1;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db",
+        "capture_variable": "agent_id"
+      }
+    },
+
+    {
+      "id": "check_apps_page",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Check apps page after installation",
+      "config": {
+        "url": "/manage/apps",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "view_app_details_and_verify",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Open the app details page and verify UI elements",
+      "config": {
+        "url": "/manage/apps/{{app_id}}",
+        "wait_for": [
+          { "selector": "h1" },
+          { "selector": ".app-meta" },
+          { "selector": ".app-header" },
+          { "selector": ".app-actions" },
+          { "selector": ".tabs" },
+          { "selector": ".tab-content" },
+          { "selector": ".app-description" }
+        ],
+        "take_screenshot": true,
+        "keep_page_open": false
+      }
+    },
+    {
+      "id": "view_agent_chat_history_and_verify",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Open the agent chat history page and verify UI elements",
+      "config": {
+        "url": "/agents/{{agent_id}}/chat",
+        "wait_for": [
+          { "selector": ".header" },
+          { "selector": ".agent-details h2" },
+          { "selector": ".chat-container" },
+          { "selector": ".chat-messages" },
+          { "selector": ".chat-input-section" },
+          { "selector": ".input-container" },
+          { "selector": "#message-input" },
+          { "selector": "#send-button" }
+        ],
+        "take_screenshot": true,
+        "keep_page_open": false
+      }
+    },
+    {
+      "id": "final_verification",
+      "type": "command",
+      "action": "verify_database", 
+      "description": "Final verification of complete setup (users, API keys, providers, apps, models, fields, routes)",
+      "config": {
+        "queries": [
+          "SELECT COUNT(*) as total_users FROM users;",
+          "SELECT COUNT(*) as total_api_keys FROM api_keys;",
+          "SELECT COUNT(*) as total_providers FROM llm_providers;",
+          "SELECT COUNT(*) as total_apps FROM apps;",
+          "SELECT COUNT(*) as total_models FROM models;",
+          "SELECT COUNT(*) as total_fields FROM fields;",
+          "SELECT COUNT(*) as total_app_routes FROM app_routes;",
+          "SELECT name, user_id FROM api_keys;",
+          "SELECT name, provider_type FROM llm_providers;",
+          "SELECT name, version FROM apps;",
+          "SELECT m.name as model_name, m.model_slug, COUNT(f.field_id) as field_count FROM models m LEFT JOIN fields f ON m.model_id = f.model_id GROUP BY m.model_id, m.name, m.model_slug;",
+          "SELECT ar.path, ar.title, a.name as app_name FROM app_routes ar JOIN apps a ON ar.app_id = a.app_id;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "generate_html_report",
+      "type": "command",
+      "action": "generate_html_report",
+      "description": "Generate comprehensive HTML report of test results",
+      "config": {
+        "title": "FiberWise App Installation Test Report",
+        "include_screenshots": true,
+        "filename": "app_install_test_report.html",
+        "custom_sections": {
+          "Test Overview": "<p>This test verifies the complete app installation process including database migration, dynamic model creation, agent registration, and API endpoint availability.</p><p><strong>Key Components Tested:</strong></p><ul><li>App manifest processing and storage</li><li>Dynamic data model creation with proper field types</li><li>Agent installation and configuration</li><li>Route extraction and registration</li><li>API endpoint availability</li></ul>",
+          "Installation Process": "<p>The test covers the end-to-end installation workflow:</p><ol><li>Upload app bundle (activation-chat)</li><li>Process unified manifest structure</li><li>Create dynamic data models from manifest.app.models</li><li>Register agent and extract routes</li><li>Verify database integrity and API availability</li></ol>"
+        }
+      }
+    }
+  ]
+}

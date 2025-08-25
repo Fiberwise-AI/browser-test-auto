@@ -1,0 +1,92 @@
+{
+  "script_name": "simple_existing_instance_test",
+  "description": "Basic test against local running FiberWise instance",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "existing_instance_url": "http://localhost:6701",
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register a test user",
+      "config": {
+        "users": [
+          {
+            "username": "simpletest",
+            "email": "simpletest@example.com",
+            "password": "TestPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_user_created",
+      "type": "command", 
+      "action": "verify_database",
+      "description": "Verify user was registered in database",
+      "config": {
+        "queries": [
+          "SELECT id, username, email FROM users WHERE username = 'simpletest';",
+          "SELECT COUNT(*) as user_count FROM users;"
+        ],
+        "database_path": "{{existing_db_path}}"
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with test user",
+      "config": {
+        "username": "simpletest",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "visit_api_keys",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Visit API keys page",
+      "config": {
+        "url": "/settings/api-keys",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "create_api_key",
+      "type": "api_key",
+      "action": "create_api_key",
+      "description": "Create an API key",
+      "config": {
+        "key_name": "Simple Test Key",
+        "scopes": ["read:all"],
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "verify_api_key_created",
+      "type": "command",
+      "action": "verify_database", 
+      "description": "Verify API key was created in database",
+      "config": {
+        "queries": [
+          "SELECT id, name, user_id FROM api_keys WHERE name = 'Simple Test Key';",
+          "SELECT COUNT(*) as api_key_count FROM api_keys;"
+        ],
+        "database_path": "{{existing_db_path}}"
+      }
+    }
+  ]
+}

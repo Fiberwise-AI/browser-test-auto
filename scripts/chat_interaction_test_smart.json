@@ -1,0 +1,117 @@
+{
+  "script_name": "chat_interaction_test_smart",
+  "description": "Smart chat interaction test that auto-discovers existing instance settings and tests chat functionality",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "start_existing_instance",
+      "type": "instance",
+      "action": "start_existing_instance",
+      "description": "Auto-start existing instance and discover settings",
+      "config": {
+        "instance_id": "test_20250807_160750_dca735f5"
+      }
+    },
+    {
+      "id": "login_existing_user",
+      "type": "browser",
+      "action": "test_login_simple",
+      "description": "Login with existing user from the instance",
+      "config": {
+        "username": "appinstaller",
+        "password": "TestPass123!"
+      }
+    },
+    {
+      "id": "navigate_to_apps",
+      "type": "browser",
+      "action": "navigate",
+      "description": "Navigate to apps page to find installed app",
+      "config": {
+        "url": "/manage/apps",
+        "expected_title": "Apps"
+      }
+    },
+    {
+      "id": "get_agent_info_from_db",
+      "type": "database",
+      "action": "execute_database_queries",
+      "description": "Get agent information from database",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          {
+            "description": "Find agent for chat app",
+            "sql": "SELECT agent_id, name, description FROM agents WHERE app_id IN (SELECT app_id FROM apps WHERE name LIKE '%chat%') ORDER BY created_at DESC LIMIT 1;",
+            "store_result_as": "agent_info"
+          }
+        ]
+      }
+    },
+    {
+      "id": "navigate_to_agent_chat",
+      "type": "browser",
+      "action": "navigate",
+      "description": "Navigate to agent chat page using discovered agent ID",
+      "config": {
+        "url": "/agents/{{agent_info.0.agent_id}}/chat",
+        "expected_title": "Agent Chat History"
+      }
+    },
+    {
+      "id": "verify_chat_page_loaded",
+      "type": "browser",
+      "action": "take_screenshot",
+      "description": "Take screenshot of chat page"
+    },
+    {
+      "id": "check_page_content",
+      "type": "browser", 
+      "action": "verify_page_content",
+      "description": "Verify we're on the chat page",
+      "config": {
+        "checks": [
+          {
+            "type": "title_contains",
+            "value": "Chat"
+          },
+          {
+            "type": "url_contains", 
+            "value": "/chat"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_final_chat_state",
+      "type": "database",
+      "action": "execute_database_queries",
+      "description": "Verify chat system is ready and agent exists",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          {
+            "description": "Verify agent exists and is active",
+            "sql": "SELECT agent_id, name, description, is_active FROM agents WHERE app_id IN (SELECT app_id FROM apps WHERE name LIKE '%chat%') ORDER BY created_at DESC LIMIT 1;"
+          },
+          {
+            "description": "Check if agent has any existing messages",
+            "sql": "SELECT COUNT(*) as existing_messages FROM messages WHERE agent_id = (SELECT agent_id FROM agents WHERE app_id IN (SELECT app_id FROM apps WHERE name LIKE '%chat%') ORDER BY created_at DESC LIMIT 1);"
+          },
+          {
+            "description": "Get app details for the chat app",
+            "sql": "SELECT app_id, name, version, description FROM apps WHERE name LIKE '%chat%' ORDER BY created_at DESC LIMIT 1;"
+          }
+        ]
+      }
+    }
+  ]
+}

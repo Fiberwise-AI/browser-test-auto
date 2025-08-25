@@ -1,0 +1,29 @@
+{
+  "script_name": "check_llm_providers",
+  "description": "Check if LLM providers are configured in the database",
+  "version": "1.0",
+  "settings": {
+    "headless": true,
+    "use_existing_instance": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "check_llm_providers",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check what LLM provider tables and data exist",
+      "config": {
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_160750_dca735f5\\local_data\\fiberwise.db",
+        "queries": [
+          "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%provider%';",
+          "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%llm%';",
+          "SELECT COUNT(*) as total_llm_providers FROM llm_providers;",
+          "SELECT provider_name, provider_type, is_active FROM llm_providers LIMIT 5;",
+          "SELECT COUNT(*) as total_activations FROM activations;",
+          "SELECT activation_id, status, created_at FROM activations ORDER BY created_at DESC LIMIT 3;"
+        ]
+      }
+    }
+  ]
+}

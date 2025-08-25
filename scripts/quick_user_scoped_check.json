@@ -1,0 +1,60 @@
+{
+  "script_name": "quick_user_scoped_check",
+  "description": "Quick check of user-scoped WebSocket system using existing instance",
+  "version": "1.0", 
+  "settings": {
+    "headless": true,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "existing_instance_url": "http://localhost:6620",
+    "take_screenshots": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "check_existing_user_data",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check existing users and their API keys for WebSocket authentication",
+      "config": {
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_160750_dca735f5\\local_data\\fiberwise.db",
+        "queries": [
+          "SELECT COUNT(*) as total_users FROM users;",
+          "SELECT id, username, email FROM users ORDER BY created_at DESC LIMIT 5;",
+          "SELECT COUNT(*) as total_agent_keys FROM agent_api_keys;",
+          "SELECT k.key_id, k.description, u.username as owner FROM agent_api_keys k LEFT JOIN users u ON k.created_by = u.id ORDER BY k.created_at DESC LIMIT 3;"
+        ]
+      }
+    },
+    {
+      "id": "check_activation_attribution",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check if activations have user attribution (created_by field)",
+      "config": {
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_160750_dca735f5\\local_data\\fiberwise.db",
+        "queries": [
+          "SELECT COUNT(*) as total_activations FROM agent_activations;",
+          "SELECT activation_id, agent_id, status, created_by, created_at FROM agent_activations ORDER BY created_at DESC LIMIT 3;",
+          "SELECT DISTINCT created_by, COUNT(*) as activation_count FROM agent_activations WHERE created_by IS NOT NULL GROUP BY created_by;",
+          "SELECT 'User-scoped system check' as check_type, CASE WHEN COUNT(*) > 0 THEN 'READY' ELSE 'NOT_READY' END as status FROM agent_activations WHERE created_by IS NOT NULL;"
+        ]
+      }
+    },
+    {
+      "id": "verify_websocket_components",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify components needed for user-scoped WebSocket system",
+      "config": {
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_160750_dca735f5\\local_data\\fiberwise.db",
+        "queries": [
+          "SELECT 'API Keys with User Attribution' as component, COUNT(*) as count FROM agent_api_keys WHERE created_by IS NOT NULL;",
+          "SELECT 'Users Available for Scoping' as component, COUNT(*) as count FROM users;",  
+          "SELECT 'Activations with User Context' as component, COUNT(*) as count FROM agent_activations WHERE created_by IS NOT NULL;",
+          "SELECT 'WebSocket Auth Ready' as component, CASE WHEN COUNT(*) > 0 THEN 'YES' ELSE 'NO' END as status FROM agent_api_keys ak JOIN users u ON ak.created_by = u.id;"
+        ]
+      }
+    }
+  ]
+}

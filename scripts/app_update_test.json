@@ -1,0 +1,276 @@
+{
+  "script_name": "Complete_App_Update_Test",
+  "description": "End-to-end test: create instance, install app, then update the app with changes",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "setup",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create and start temp FiberWise instance"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register a test user for app operations",
+      "config": {
+        "users": [
+          {
+            "username": "appupdater",
+            "email": "appupdater@example.com",
+            "password": "TestPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login to verify authentication",
+      "config": {
+        "username": "appupdater",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "create_api_key",
+      "type": "browser",
+      "action": "create_api_key",
+      "description": "Create API key for fiber CLI usage",
+      "config": {
+        "key_name": "Fiber Update CLI Key",
+        "scopes": ["read:all", "write:all"],
+        "capture_secret": "fiber_update_cli_key",
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "configure_cli",
+      "type": "command",
+      "action": "run_command",
+      "description": "Configure fiber CLI with API key and instance URL",
+      "config": {
+        "command": "fiber account add-config --name \"app-update-test\" --api-key {{fiber_update_cli_key}} --base-url {{base_url}} --set-default",
+        "working_directory": "c:/Users/david/fiberwise",
+        "timeout": 30
+      }
+    },
+    {
+      "id": "add_llm_provider",
+      "type": "command",
+      "action": "run_command", 
+      "description": "Add Google Gemini provider for AI functionality",
+      "config": {
+        "command": "fiber account add-provider --provider google --api-key {{ENV:GEMINI_API_KEY}} --name \"Google Gemini for Apps\" --base-url https://generativelanguage.googleapis.com/v1beta --model gemini-1.5-pro --to-instance \"app-update-test\"",
+        "working_directory": "c:/Users/david/fiberwise",
+        "timeout": 30
+      }
+    },
+    {
+      "id": "install_initial_app",
+      "type": "command",
+      "action": "fiber_install",
+      "description": "Install initial version of chat-activation app",
+      "config": {
+        "app_path": "../fiber-apps/dev/activation-chat",
+        "fallback_apps": ["../fiber-apps/beta/activation-chat", "../fiber-apps/agents/activation-chat"],
+        "base_url": "{{instance_url}}",
+        "use_api_key": true,
+        "timeout": 60,
+        "verbose": true
+      }
+    },
+    {
+      "id": "verify_initial_app_installed",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify initial app was installed",
+      "config": {
+        "queries": [
+          "SELECT app_id, name, version, created_at FROM apps WHERE name LIKE '%chat%' ORDER BY created_at DESC LIMIT 1;",
+          "SELECT COUNT(*) as route_count FROM app_routes ar JOIN apps a ON ar.app_id = a.app_id WHERE a.name LIKE '%chat%';",
+          "SELECT ar.path, ar.title FROM app_routes ar JOIN apps a ON ar.app_id = a.app_id WHERE a.name LIKE '%chat%' ORDER BY ar.created_at LIMIT 5;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db",
+        "capture_variable": "initial_app_data"
+      }
+    },
+    {
+      "id": "capture_initial_app_id",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Capture the app_id for version tracking",
+      "config": {
+        "queries": [
+          "SELECT app_id FROM apps WHERE name LIKE '%chat%' ORDER BY created_at DESC LIMIT 1;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db",
+        "capture_variable": "app_id"
+      }
+    },
+    {
+      "id": "wait_before_update",
+      "type": "command",
+      "action": "run_command",
+      "description": "Wait a few seconds to ensure different timestamps",
+      "config": {
+        "command": "timeout 3",
+        "timeout": 5,
+        "continue_on_error": true
+      }
+    },
+    {
+      "id": "update_app_with_changes",
+      "type": "command",
+      "action": "fiber_update",
+      "description": "Update the chat-activation app with any changes",
+      "config": {
+        "app_path": "../fiber-apps/dev/activation-chat",
+        "fallback_apps": ["../fiber-apps/beta/activation-chat", "../fiber-apps/agents/activation-chat"],
+        "base_url": "{{instance_url}}",
+        "use_api_key": true,
+        "timeout": 60,
+        "verbose": true,
+        "force": true
+      }
+    },
+    {
+      "id": "verify_app_updated",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify app update was successful",
+      "config": {
+        "queries": [
+          "SELECT app_id, name, version, created_at, updated_at FROM apps WHERE app_id = '{{app_id}}';",
+          "SELECT COUNT(*) as version_count FROM app_versions WHERE app_id = '{{app_id}}';",
+          "SELECT version, status, created_at FROM app_versions WHERE app_id = '{{app_id}}' ORDER BY created_at DESC LIMIT 3;",
+          "SELECT COUNT(*) as route_count FROM app_routes WHERE app_id = '{{app_id}}';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "compare_timestamps",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Compare created_at vs updated_at to ensure update occurred",
+      "config": {
+        "queries": [
+          "SELECT app_id, name, created_at, updated_at, (updated_at > created_at) as was_updated FROM apps WHERE app_id = '{{app_id}}';",
+          "SELECT COUNT(*) as newer_versions FROM app_versions WHERE app_id = '{{app_id}}' AND created_at > (SELECT created_at FROM apps WHERE app_id = '{{app_id}}');"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "check_apps_page_post_update",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Check apps page after update",
+      "config": {
+        "url": "/manage/apps",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "view_updated_app_details",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Open the updated app details page and verify UI elements",
+      "config": {
+        "url": "/manage/apps/{{app_id}}",
+        "wait_for": [
+          { "selector": "h1" },
+          { "selector": ".app-meta" },
+          { "selector": ".app-header" },
+          { "selector": ".app-actions" },
+          { "selector": ".tabs" },
+          { "selector": ".tab-content" }
+        ],
+        "take_screenshot": true,
+        "keep_page_open": false
+      }
+    },
+    {
+      "id": "verify_app_versions_history",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify version history was maintained",
+      "config": {
+        "queries": [
+          "SELECT version, status, created_at, bundle_size FROM app_versions WHERE app_id = '{{app_id}}' ORDER BY created_at;",
+          "SELECT COUNT(DISTINCT version) as unique_versions FROM app_versions WHERE app_id = '{{app_id}}';",
+          "SELECT version, status FROM app_versions WHERE app_id = '{{app_id}}' AND status = 'active' ORDER BY created_at DESC LIMIT 1;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "test_force_update",
+      "type": "command",
+      "action": "fiber_update",
+      "description": "Test force update even when no changes detected",
+      "config": {
+        "app_path": "../fiber-apps/dev/activation-chat",
+        "base_url": "{{instance_url}}",
+        "use_api_key": true,
+        "timeout": 60,
+        "verbose": true,
+        "force": true
+      }
+    },
+    {
+      "id": "verify_force_update_created_version",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify force update created another version",
+      "config": {
+        "queries": [
+          "SELECT COUNT(*) as total_versions FROM app_versions WHERE app_id = '{{app_id}}';",
+          "SELECT version, status, created_at FROM app_versions WHERE app_id = '{{app_id}}' ORDER BY created_at DESC LIMIT 2;",
+          "SELECT app_id, updated_at FROM apps WHERE app_id = '{{app_id}}';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "final_verification",
+      "type": "command",
+      "action": "verify_database", 
+      "description": "Final verification of app update process",
+      "config": {
+        "queries": [
+          "SELECT COUNT(*) as total_users FROM users;",
+          "SELECT COUNT(*) as total_apps FROM apps;",
+          "SELECT COUNT(*) as total_app_versions FROM app_versions;",
+          "SELECT COUNT(*) as total_app_routes FROM app_routes;",
+          "SELECT a.name, a.version, a.created_at, a.updated_at, (SELECT COUNT(*) FROM app_versions av WHERE av.app_id = a.app_id) as version_count FROM apps a WHERE a.app_id = '{{app_id}}';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "generate_html_report",
+      "type": "command",
+      "action": "run_command",
+      "description": "Generate HTML report of update test results",
+      "config": {
+        "command": "python render_html_report.py {{session_dir}}/session_info.json {{session_dir}}/update_test_report.html",
+        "working_directory": "c:/Users/david/fiberwise/fiberwise-browser-tests",
+        "timeout": 30
+      }
+    }
+  ]
+}

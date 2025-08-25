@@ -1,0 +1,60 @@
+{
+  "script_name": "simple_login_test",
+  "description": "Simple test for user registration and login",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "setup",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create and start temp FiberWise instance"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register a test user",
+      "config": {
+        "users": [
+          {
+            "username": "logintest1",
+            "email": "logintest@example.com",
+            "password": "TestPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_user_in_db",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify user was saved to database",
+      "config": {
+        "queries": [
+          "SELECT id, username, email FROM users WHERE username = 'logintest1';",
+          "SELECT COUNT(*) as user_count FROM users;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "test_simple_login",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Test simple login without API key creation",
+      "config": {
+        "username": "logintest1",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    }
+  ]
+}

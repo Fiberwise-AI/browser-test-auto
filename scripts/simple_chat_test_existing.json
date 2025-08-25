@@ -1,0 +1,64 @@
+{
+  "script_name": "Simple Chat Test - Existing Instance",
+  "description": "Test chat messaging with existing running instance",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_existing_instance": true,
+    "existing_instance_url": "http://localhost:6701",
+    "auto_cleanup": false,
+    "take_screenshots": true
+  },
+  "steps": [
+    {
+      "id": "test_instance_connection",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Check if instance is running",
+      "config": {
+        "url": "/",
+        "take_screenshot": true,
+        "continue_on_error": true
+      }
+    },
+    {
+      "id": "navigate_to_chat",
+      "type": "browser",
+      "action": "navigate_and_verify", 
+      "description": "Navigate to agent chat page",
+      "config": {
+        "url": "/agents/f9d5d12d-7bbf-4dee-9ee9-6938ee5396bb/chat",
+        "wait_for": [
+          { "selector": "#message-input" },
+          { "selector": "#send-button" }
+        ],
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "send_test_message",
+      "type": "browser",
+      "action": "send_chat_message",
+      "description": "Send a test message to the LLM agent",
+      "config": {
+        "message": "Hello! Can you help me test this chat system?",
+        "take_screenshot": true,
+        "wait_after_send": 5000
+      }
+    },
+    {
+      "id": "check_database_activations",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check if activation was created",
+      "config": {
+        "queries": [
+          "SELECT * FROM agent_activations ORDER BY created_at DESC LIMIT 3;",
+          "SELECT COUNT(*) as total_activations FROM agent_activations;",
+          "SELECT status, COUNT(*) as count FROM agent_activations GROUP BY status;"
+        ],
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_144251_3cf1735e\\local_data\\fiberwise.db"
+      }
+    }
+  ]
+}

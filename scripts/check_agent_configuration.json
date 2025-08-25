@@ -1,0 +1,27 @@
+{
+  "script_name": "check_agent_configuration",
+  "description": "Check agent file path and LLM provider configuration",
+  "version": "1.0",
+  "settings": {
+    "headless": true,
+    "use_existing_instance": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "check_agent_config",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check agent configuration and file paths",
+      "config": {
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_144251_3cf1735e\\local_data\\fiberwise.db",
+        "queries": [
+          "UPDATE agents SET agent_type_id = 'llm' WHERE agent_id = 'f9d5d12d-7bbf-4dee-9ee9-6938ee5396bb';",
+          "SELECT agent_id, agent_type_id, name, description, type FROM agents;",
+          "SELECT * FROM agent_versions;",
+          "SELECT name, provider_type, is_active, configuration FROM llm_providers;"
+        ]
+      }
+    }
+  ]
+}

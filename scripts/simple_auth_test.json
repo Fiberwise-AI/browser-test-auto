@@ -1,0 +1,61 @@
+{
+  "script_name": "simple_auth_test",
+  "description": "Simple test to verify user registration and login work",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "setup_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create and start temporary FiberWise instance"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user",
+      "config": {
+        "headless": true,
+        "users": [
+          {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "TestPass123!",
+            "first_name": "Test",
+            "last_name": "User"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_user_in_db",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check if user was created in database",
+      "config": {
+        "queries": [
+          "SELECT id, username, email, is_active FROM users WHERE email = 'test@example.com'"
+        ]
+      }
+    },
+    {
+      "id": "test_login",
+      "type": "browser", 
+      "action": "test_login",
+      "description": "Test login functionality",
+      "config": {
+        "username": "testuser",
+        "password": "TestPass123!",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    }
+  ]
+}

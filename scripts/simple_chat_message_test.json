@@ -1,0 +1,56 @@
+{
+  "script_name": "simple_chat_message_test",
+  "description": "Simple test to send a chat message by filling input and clicking send",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "start_existing_instance",
+      "type": "instance",
+      "action": "start_existing_instance",
+      "description": "Start the existing instance",
+      "config": {
+        "instance_id": "test_20250807_160750_dca735f5"
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with existing user",
+      "config": {
+        "username": "appinstaller",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "navigate_to_chat",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Go to chat page",
+      "config": {
+        "url": "/agents/cf8c470e-0602-4a10-99de-40b5534698ea/chat",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "take_screenshot_of_chat_page",
+      "type": "browser",
+      "action": "take_screenshot",
+      "description": "Screenshot the chat page to see the interface",
+      "config": {
+        "name": "chat_page_loaded"
+      }
+    }
+  ]
+}

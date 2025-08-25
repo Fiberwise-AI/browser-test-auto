@@ -1,0 +1,107 @@
+{
+  "script_name": "Add Gemini Provider Test",
+  "description": "Test adding a Google Gemini provider using environment variables",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "create_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create isolated FiberWise instance for testing"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user",
+      "config": {
+        "users": [
+          {
+            "username": "geminitestuser",
+            "email": "geminitest@example.com",
+            "password": "GeminiTest123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with test user",
+      "config": {
+        "username": "geminitest@example.com",
+        "password": "GeminiTest123!",
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "navigate_to_providers",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to LLM providers page",
+      "config": {
+        "url": "/settings/llm-providers",
+        "keep_page_open": true,
+        "expected_elements": [
+          "h1:has-text('LLM Providers')",
+          "button:has-text('Add Provider')"
+        ]
+      }
+    },
+    {
+      "id": "configure_gemini_provider",
+      "type": "browser",
+      "action": "configure_llm_provider",
+      "description": "Configure Google Gemini provider",
+      "config": {
+        "provider_name": "Google Gemini Production",
+        "provider_type": "gemini",
+        "api_endpoint": "https://generativelanguage.googleapis.com/v1beta",
+        "api_key": "{{ENV:GEMINI_API_KEY}}",
+        "models": [
+          "gemini-1.5-pro",
+          "gemini-1.5-flash",
+          "gemini-pro"
+        ],
+        "temperature": 0.8,
+        "take_screenshot": false
+      }
+    },
+    {
+      "id": "verify_provider_created",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify provider was saved to database",
+      "config": {
+        "queries": [
+          "SELECT name, provider_type, api_endpoint, is_active, created_by FROM llm_providers WHERE name = 'Google Gemini Production';",
+          "SELECT COUNT(*) as total_providers FROM llm_providers;",
+          "SELECT provider_id, name, provider_type, configuration, created_at FROM llm_providers ORDER BY created_at DESC LIMIT 3;",
+          "PRAGMA table_info(llm_providers);"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "check_provider_defaults",
+      "type": "command", 
+      "action": "verify_database",
+      "description": "Check if provider defaults table has data",
+      "config": {
+        "queries": [
+          "SELECT COUNT(*) as defaults_count FROM llm_provider_defaults;",
+          "SELECT provider_type, default_name FROM llm_provider_defaults LIMIT 5;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    }
+  ]
+}

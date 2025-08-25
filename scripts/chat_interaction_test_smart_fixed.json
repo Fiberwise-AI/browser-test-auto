@@ -1,0 +1,96 @@
+{
+  "script_name": "chat_interaction_test_smart",
+  "description": "Smart chat interaction test that auto-discovers existing instance settings and tests chat functionality",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "start_existing_instance",
+      "type": "instance",
+      "action": "start_existing_instance",
+      "description": "Auto-start existing instance and discover settings",
+      "config": {
+        "instance_id": "test_20250807_160750_dca735f5"
+      }
+    },
+    {
+      "id": "login_existing_user",
+      "type": "browser", 
+      "action": "test_login",
+      "description": "Login with existing user from the instance",
+      "config": {
+        "username": "appinstaller",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "navigate_to_apps",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to apps page to find installed app",
+      "config": {
+        "url": "/manage/apps",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "get_agent_info_from_db",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Get agent information from database",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          "SELECT agent_id, name, description FROM agents WHERE app_id IN (SELECT app_id FROM apps WHERE name LIKE '%chat%') ORDER BY created_at DESC LIMIT 1;"
+        ]
+      }
+    },
+    {
+      "id": "navigate_to_agents_list",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to agents list page",
+      "config": {
+        "url": "/agents",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "verify_chat_functionality",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to agent chat and verify page loads",
+      "config": {
+        "url": "/agents",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "final_verification",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Final verification of chat system state",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          "SELECT COUNT(*) as total_apps FROM apps;",
+          "SELECT COUNT(*) as total_agents FROM agents;",
+          "SELECT name, version FROM apps WHERE name LIKE '%chat%';",
+          "SELECT agent_id, name FROM agents WHERE app_id IN (SELECT app_id FROM apps WHERE name LIKE '%chat%');"
+        ]
+      }
+    }
+  ]
+}

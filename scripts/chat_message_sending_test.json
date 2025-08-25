@@ -1,0 +1,75 @@
+{
+  "script_name": "chat_message_sending_test",
+  "description": "Test actual message sending functionality in the chat interface",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "start_existing_instance",
+      "type": "instance",
+      "action": "start_existing_instance",
+      "description": "Auto-start existing instance with chat app",
+      "config": {
+        "instance_id": "test_20250807_160750_dca735f5"
+      }
+    },
+    {
+      "id": "login_existing_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with existing user",
+      "config": {
+        "username": "appinstaller",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "navigate_to_chat_page",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to agent chat history page",
+      "config": {
+        "url": "/agents/cf8c470e-0602-4a10-99de-40b5534698ea/chat",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "check_baseline_activations",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check current activation count before sending messages",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          "SELECT COUNT(*) as baseline_count FROM activations WHERE agent_id = 'cf8c470e-0602-4a10-99de-40b5534698ea';"
+        ]
+      }
+    },
+    {
+      "id": "analyze_chat_elements",
+      "type": "browser",
+      "action": "analyze_page_html",
+      "description": "Analyze chat page elements before testing",
+      "config": {
+        "analyze_selectors": [
+          "#message-input",
+          "#send-button", 
+          ".chat-messages",
+          ".message.user",
+          ".message.agent"
+        ],
+        "take_screenshot": true
+      }
+    }
+  ]
+}

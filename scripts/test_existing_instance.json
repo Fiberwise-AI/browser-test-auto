@@ -1,0 +1,56 @@
+{
+  "script_name": "test_existing_instance",
+  "description": "Test what users exist in the current running instance",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "test_register",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Try to register users to see what happens",
+      "config": {
+        "headless": false,
+        "users": [
+          {
+            "username": "apitest",
+            "email": "apitest@example.com",
+            "password": "TestPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_login",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Try to login with new user",
+      "config": {
+        "username": "apitest",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "create_api_key",
+      "type": "api_key",
+      "action": "create_api_key",
+      "description": "Create API key with successful login",
+      "config": {
+        "username": "apitest",
+        "password": "TestPass123!",
+        "key_name": "My Test API Key",
+        "scopes": ["read", "write"],
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    }
+  ]
+}

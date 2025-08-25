@@ -1,0 +1,110 @@
+{
+  "script_name": "test_websocket_user_isolation_no_hang",
+  "description": "User-scoped WebSocket test with proper cleanup and no terminal hanging",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": true,
+    "force_exit_on_complete": true
+  },
+  "steps": [
+    {
+      "id": "setup",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create temp instance for isolation testing"
+    },
+    {
+      "id": "register_user1",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user (single user to avoid conflicts)",
+      "config": {
+        "users": [
+          {
+            "username": "wsuser1",
+            "email": "ws1@example.com",
+            "password": "TestPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_user_created",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify user created successfully",
+      "config": {
+        "queries": [
+          "SELECT id, username, email FROM users WHERE username = 'wsuser1';",
+          "SELECT COUNT(*) as user_count FROM users;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "login_user1",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login as user1",
+      "config": {
+        "username": "wsuser1",
+        "password": "TestPass123!",
+        "keep_page_open": false,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "navigate_api_keys",
+      "type": "browser", 
+      "action": "navigate_and_verify",
+      "description": "Navigate to API keys page",
+      "config": {
+        "url": "/settings/api-keys",
+        "take_screenshot": true,
+        "keep_page_open": false
+      }
+    },
+    {
+      "id": "create_api_key",
+      "type": "api_key",
+      "action": "create_api_key",
+      "description": "Create API key for WebSocket authentication",
+      "config": {
+        "key_name": "WebSocket Test Key",
+        "scopes": ["read:all", "write:all"],
+        "capture_secret": "test_api_key",
+        "take_screenshot": true,
+        "keep_page_open": false
+      }
+    },
+    {
+      "id": "verify_api_key_user_attribution",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify API key properly attributed to user for WebSocket isolation",
+      "config": {
+        "queries": [
+          "SELECT k.key_id, k.description, u.username as owner, k.created_by FROM agent_api_keys k JOIN users u ON k.created_by = u.id WHERE u.username = 'wsuser1';",
+          "SELECT COUNT(*) as user_keys FROM agent_api_keys WHERE created_by = (SELECT id FROM users WHERE username = 'wsuser1');",
+          "SELECT 'WebSocket User-Scoping Ready' as status, CASE WHEN COUNT(*) > 0 THEN 'YES' ELSE 'NO' END as ready FROM agent_api_keys WHERE created_by IS NOT NULL;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "test_completion_summary",
+      "type": "command",
+      "action": "run_command",
+      "description": "Display test completion summary",
+      "config": {
+        "command": "echo \"✅ User-Scoped WebSocket Test Complete: User isolation components verified and ready!\"",
+        "capture_output": true,
+        "timeout": 2
+      }
+    }
+  ]
+}

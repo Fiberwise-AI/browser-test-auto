@@ -1,0 +1,59 @@
+{
+  "script_name": "test_llm_providers",
+  "description": "Test LLM providers using environment variables for API keys",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "video_recording": false,
+    "take_screenshots": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "setup_test_environment",
+      "type": "command",
+      "action": "run_command",
+      "description": "Check environment variables",
+      "config": {
+        "command": "python -c \"print('Testing LLM Provider Service'); import os; print('Environment check:'); print(f'GEMINI_API_KEY: {\\\"SET\\\" if os.getenv(\\\"GEMINI_API_KEY\\\") else \\\"NOT SET\\\"}'); print(f'DEEPSEEK_API_KEY: {\\\"SET\\\" if os.getenv(\\\"DEEPSEEK_API_KEY\\\") else \\\"NOT SET\\\"}')\""
+      }
+    },
+    {
+      "id": "test_import_llm_service",
+      "type": "command", 
+      "action": "run_command",
+      "description": "Test importing LLM provider service",
+      "config": {
+        "command": "python -c \"from fiberwise_common.services import LLMProviderService, settings; print('✓ LLMProviderService imported successfully'); print(f'Settings loaded - Gemini: {\\\"SET\\\" if settings.gemini_api_key else \\\"NOT SET\\\"}, DeepSeek: {\\\"SET\\\" if settings.deepseek_api_key else \\\"NOT SET\\\"}')\""
+      }
+    },
+    {
+      "id": "test_provider_configuration_system",
+      "type": "command",
+      "action": "run_command",
+      "description": "Test the provider configuration system we just fixed",
+      "config": {
+        "command": "python -c \"import os, sqlite3, json; db_path = os.path.expanduser('~/.fiberwise/fiberwise.db'); print(f'Testing FiberWise database: {db_path}'); print(f'Database exists: {os.path.exists(db_path)}'); conn = sqlite3.connect(db_path) if os.path.exists(db_path) else None; cursor = conn.cursor() if conn else None; cursor.execute('SELECT name, provider_type, is_active, configuration FROM llm_providers') if cursor else print('❌ No database found'); rows = cursor.fetchall() if cursor else []; print(f'Found {len(rows)} providers:'); [print(f'  ✓ {row[0]} ({row[1]}) - Active: {bool(row[2])}') for row in rows]; conn.close() if conn else None\""
+      }
+    },
+    {
+      "id": "test_async_sync_provider_retrieval", 
+      "type": "command",
+      "action": "run_command",
+      "description": "Test provider configuration parsing (the core fix we made)",
+      "config": {
+        "command": "python c:/Users/david/fiberwise/fiber-test-bin/simple_provider_check.py"
+      }
+    },
+    {
+      "id": "cleanup_test_db",
+      "type": "command",
+      "action": "run_command", 
+      "description": "Clean up any test database files",
+      "config": {
+        "command": "python -c \"import os; [os.remove(f) for f in ['test.db', 'test.db-wal', 'test.db-shm'] if os.path.exists(f)]; print('✓ Test database files cleaned up')\""
+      }
+    }
+  ]
+}

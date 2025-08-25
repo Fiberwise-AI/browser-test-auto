@@ -1,0 +1,162 @@
+{
+  "script_name": "llm_providers_enhanced_test",
+  "description": "Comprehensive test of LLM providers using existing actions",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "create_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create isolated FiberWise instance"
+    },
+    {
+      "id": "register_admin",
+      "type": "user",
+      "action": "register_test_user",
+      "config": {
+        "username": "llm_admin",
+        "email": "llm_admin@example.com",
+        "password": "AdminPass123!",
+        "is_admin": true
+      }
+    },
+    {
+      "id": "login_admin",
+      "type": "browser",
+      "action": "test_login",
+      "config": {
+        "username": "llm_admin@example.com",
+        "password": "AdminPass123!",
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "navigate_to_providers",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "config": {
+        "url": "/settings/llm-providers",
+        "expected_elements": [
+          "h1:has-text('LLM Providers')",
+          "button:has-text('Add Provider')"
+        ]
+      }
+    },
+    {
+      "id": "test_defaults_api",
+      "type": "command",
+      "action": "api_test",
+      "description": "Test that default provider configurations are accessible via API",
+      "config": {
+        "method": "GET",
+        "url": "http://localhost:{{port}}/api/v1/llm-provider-defaults",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "expected_status": 200,
+        "response_checks": [
+          {
+            "path": "$.openai",
+            "exists": true
+          },
+          {
+            "path": "$.anthropic", 
+            "exists": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_default_provider_creation_ui",
+      "type": "browser",
+      "action": "interact_with_elements",
+      "config": {
+        "interactions": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Add Provider')"
+          },
+          {
+            "action": "wait_for_element",
+            "selector": ".modal:visible",
+            "timeout": 3000
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='name']",
+            "value": "Default OpenAI Provider"
+          },
+          {
+            "action": "select",
+            "selector": "select[name='provider_type']",
+            "value": "openai"
+          },
+          {
+            "action": "wait",
+            "duration": 2000,
+            "description": "Wait for defaults to load"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='api_key']",
+            "value": "sk-test123456789abcdef"
+          },
+          {
+            "action": "click",
+            "selector": "button:has-text('Save')"
+          },
+          {
+            "action": "wait_for_element",
+            "selector": ".provider-card:has-text('Default OpenAI Provider')",
+            "timeout": 5000
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_default_provider_in_db",
+      "type": "command",
+      "action": "verify_database",
+      "config": {
+        "queries": [
+          "SELECT name, provider_type, base_url FROM llm_providers WHERE name = 'Default OpenAI Provider';",
+          "SELECT COUNT(*) as provider_count FROM llm_providers;",
+          "SELECT provider_type, provider_defaults FROM llm_provider_defaults WHERE provider_type = 'openai';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "test_default_provider_deletion",
+      "type": "browser",
+      "action": "interact_with_elements",
+      "config": {
+        "interactions": [
+          {
+            "action": "click",
+            "selector": ".provider-card:has-text('Default OpenAI Provider') .dropdown-toggle"
+          },
+          {
+            "action": "click",
+            "selector": ".dropdown-menu .delete-provider"
+          },
+          {
+            "action": "click",
+            "selector": ".confirmation-dialog button:has-text('Confirm')"
+          },
+          {
+            "action": "wait_for_element_not_present",
+            "selector": ".provider-card:has-text('Default OpenAI Provider')",
+            "timeout": 5000
+          }
+        ]
+      }
+    }
+  ]
+}

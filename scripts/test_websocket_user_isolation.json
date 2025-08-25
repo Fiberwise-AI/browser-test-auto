@@ -1,0 +1,60 @@
+{
+    "script_name": "Test WebSocket User Isolation",
+    "description": "Verifies that two users in a chat application are properly isolated and do not receive each other's messages via WebSockets.",
+    "settings": {
+        "headless": true,
+        "auto_cleanup": true
+    },
+    "steps": [
+        {
+            "id": "create_instance",
+            "type": "instance",
+            "action": "create_temp_instance",
+            "description": "Create a fresh, temporary instance for the test."
+        },
+        {
+            "id": "register_users",
+            "type": "browser",
+            "action": "register_multiple_users",
+            "description": "Register two users for the isolation test.",
+            "config": {
+                "users": [
+                    {
+                        "username": "userA_iso",
+                        "email": "usera_iso@test.com",
+                        "password": "PasswordA123!"
+                    },
+                    {
+                        "username": "userB_iso",
+                        "email": "userb_iso@test.com",
+                        "password": "PasswordB123!"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "run_isolation_test",
+            "type": "browser",
+            "action": "test_websocket_isolation",
+            "description": "Run the websocket isolation test with the two registered users.",
+            "config": {
+                "user_a": {
+                    "username": "userA_iso",
+                    "password": "PasswordA123!"
+                },
+                "user_b": {
+                    "username": "userB_iso",
+                    "password": "PasswordB123!"
+                },
+                "chat_url_path": "/",
+                "message": "Hello from User A, can anyone else see this?"
+            }
+        },
+        {
+            "id": "cleanup_instance",
+            "type": "instance",
+            "action": "cleanup_instance",
+            "description": "Clean up the temporary instance after the test."
+        }
+    ]
+}

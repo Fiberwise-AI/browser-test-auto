@@ -1,0 +1,67 @@
+{
+  "script_name": "Test LLM Agent Chat",
+  "description": "Test chat with corrected LLM agent type",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_existing_instance": true,
+    "auto_cleanup": false,
+    "base_url": "http://localhost:6306",
+    "api_base_url": "http://127.0.0.1:6307"
+  },
+  "steps": [
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login to test chat",
+      "config": {
+        "username": "appinstaller",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "navigate_to_chat",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to agent chat page",
+      "config": {
+        "url": "/agents/f9d5d12d-7bbf-4dee-9ee9-6938ee5396bb/chat",
+        "wait_for": [
+          { "selector": ".chat-container" },
+          { "selector": "#message-input" },
+          { "selector": "#send-button" }
+        ],
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "send_chat_message",
+      "type": "browser",
+      "action": "send_chat_message",
+      "description": "Send test message to LLM agent",
+      "config": {
+        "message": "Hello! Can you help me test this chat system?",
+        "wait_for_response": true,
+        "response_timeout": 30000,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "verify_activation_created",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check that activation was created",
+      "config": {
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_144251_3cf1735e\\local_data\\fiberwise.db",
+        "queries": [
+          "SELECT COUNT(*) as activation_count FROM agent_activations WHERE agent_id = 'f9d5d12d-7bbf-4dee-9ee9-6938ee5396bb';",
+          "SELECT * FROM agent_activations WHERE agent_id = 'f9d5d12d-7bbf-4dee-9ee9-6938ee5396bb' ORDER BY created_at DESC LIMIT 1;"
+        ]
+      }
+    }
+  ]
+}

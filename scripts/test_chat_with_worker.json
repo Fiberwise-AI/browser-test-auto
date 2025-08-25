@@ -1,0 +1,85 @@
+{
+  "script_name": "test_chat_with_worker",
+  "description": "Test chat after enabling worker for activation processing",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": false,
+    "use_existing_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "restart_instance_with_worker",
+      "type": "instance",
+      "action": "start_existing_instance",
+      "description": "Restart the instance to enable worker",
+      "config": {
+        "instance_id": "test_20250807_160750_dca735f5"
+      }
+    },
+    {
+      "id": "login_existing_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with existing user",
+      "config": {
+        "username": "appinstaller",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "get_agent_id_from_db",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Get the chat agent ID from database",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          "SELECT agent_id, name FROM agents WHERE app_id IN (SELECT app_id FROM apps WHERE name LIKE '%chat%') ORDER BY created_at DESC LIMIT 1;"
+        ],
+        "capture_variable": "chat_agent_id"
+      }
+    },
+    {
+      "id": "navigate_to_chat_page",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to agent chat history page",
+      "config": {
+        "url": "/agents/{{chat_agent_id}}/chat",
+        "take_screenshot": true,
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "send_chat_message_with_worker",
+      "type": "browser",
+      "action": "send_chat_message",
+      "description": "Send message with worker enabled for processing",
+      "config": {
+        "message": "Hello! Worker should be running now. Can you respond?",
+        "wait_for_response": true,
+        "timeout": 60000,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "verify_activation_processed",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Check if activation was processed by worker",
+      "config": {
+        "database_path": "{{existing_db_path}}",
+        "queries": [
+          "SELECT COUNT(*) as total_activations FROM agent_activations WHERE agent_id = '{{chat_agent_id}}';",
+          "SELECT activation_id, status, completed_at, output_data FROM agent_activations WHERE agent_id = '{{chat_agent_id}}' ORDER BY created_at DESC LIMIT 2;"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "script_name": "Worker System Test",
+  "description": "Test FiberWise worker system HTTP API endpoints and documentation pages",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "create_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create isolated FiberWise instance for testing"
+    },
+    {
+      "id": "test_worker_status_api",
+      "type": "command",
+      "action": "api_test",
+      "description": "Test worker status API endpoint",
+      "config": {
+        "method": "GET",
+        "url": "http://localhost:{{port}}/api/v1/worker/status",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "expected_status": 200
+      }
+    },
+    {
+      "id": "test_worker_health_api",
+      "type": "command",
+      "action": "api_test",
+      "description": "Test worker health API endpoint",
+      "config": {
+        "method": "GET",
+        "url": "http://localhost:{{port}}/api/v1/worker/health",
+        "expected_status": [200, 503]
+      }
+    },
+    {
+      "id": "test_worker_config_api",
+      "type": "command",
+      "action": "api_test",
+      "description": "Test worker configuration API endpoint",
+      "config": {
+        "method": "GET",
+        "url": "http://localhost:{{port}}/api/v1/worker/config",
+        "expected_status": 200
+      }
+    },
+    {
+      "id": "test_worker_jobs_api",
+      "type": "command",
+      "action": "api_test",
+      "description": "Test worker jobs API endpoint",
+      "config": {
+        "method": "GET",
+        "url": "http://localhost:{{port}}/api/v1/worker/jobs",
+        "expected_status": 200
+      }
+    },
+    {
+      "id": "test_workers_list_api",
+      "type": "command",
+      "action": "api_test",
+      "description": "Test workers list API endpoint (used by frontend)",
+      "config": {
+        "method": "GET",
+        "url": "http://localhost:{{port}}/api/v1/workers",
+        "expected_status": [200, 404]
+      }
+    },
+    {
+      "id": "navigate_to_worker_list",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to worker list page",
+      "config": {
+        "url": "/manage/workers",
+        "keep_page_open": true,
+        "expected_elements": [
+          "h1:has-text('Worker Nodes')",
+          ".refresh-button"
+        ]
+      }
+    },
+    {
+      "id": "navigate_to_worker_guide",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to worker system guide page",
+      "config": {
+        "url": "/worker-system-guide",
+        "keep_page_open": true,
+        "expected_elements": [
+          "h1:has-text('Worker System Guide')",
+          "#overview",
+          "#architecture",
+          "#quick-start"
+        ]
+      }
+    },
+    {
+      "id": "navigate_to_sdk_python",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to Python SDK page to verify worker integration docs",
+      "config": {
+        "url": "/sdk/python",
+        "keep_page_open": true,
+        "expected_elements": [
+          "h1:has-text('Python SDK')",
+          "#browser-testing"
+        ]
+      }
+    },
+    {
+      "id": "verify_database_tables",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify worker-related database tables exist",
+      "config": {
+        "queries": [
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='agent_activations';",
+          "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table';",
+          "SELECT COUNT(*) as llm_provider_count FROM llm_providers;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "verify_worker_logs",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify worker system is properly initialized",
+      "config": {
+        "queries": [
+          "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%worker%';",
+          "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%activation%';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "check_server_logs",
+      "type": "command",
+      "action": "analyze_server_logs",
+      "description": "Check server logs for worker-related entries",
+      "config": {
+        "log_types": ["info", "warning", "error"],
+        "include_performance": true,
+        "generate_summary": true
+      }
+    }
+  ]
+}

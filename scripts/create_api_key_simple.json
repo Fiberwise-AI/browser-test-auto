@@ -1,0 +1,86 @@
+{
+  "script_name": "create_api_key_simple",
+  "description": "Simple focused test to create a single API key",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "setup",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create and start temp FiberWise instance"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user for API key creation",
+      "config": {
+        "headless": true,
+        "users": [
+          {
+            "username": "keyuser",
+            "email": "key@example.com",
+            "password": "TestPass123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login", 
+      "description": "Login to establish session",
+      "config": {
+        "username": "keyuser",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "create_api_key",
+      "type": "api_key",
+      "action": "create_api_key",
+      "description": "Create a single API key",
+      "config": {
+        "username": "keyuser",
+        "password": "TestPass123!",
+        "key_name": "My Test API Key",
+        "scopes": ["read", "write"],
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "verify_api_key",
+      "type": "api_key",
+      "action": "list_api_keys",
+      "description": "List API keys to verify creation",
+      "config": {
+        "username": "keyuser",
+        "password": "TestPass123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "analyze_logs",
+      "type": "command",
+      "action": "analyze_server_logs",
+      "description": "Check server logs for any issues",
+      "config": {
+        "log_types": ["error", "warning"],
+        "check_auth_patterns": true,
+        "include_performance": false,
+        "generate_summary": true
+      }
+    }
+  ]
+}

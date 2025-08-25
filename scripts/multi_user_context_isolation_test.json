@@ -1,0 +1,182 @@
+{
+  "script_name": "multi_user_context_isolation_test",
+  "description": "Test user isolation with separate browser contexts (like incognito) with colored windows for each user",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": true,
+    "auto_cleanup": false,
+    "multi_context": true,
+    "user_contexts": {
+      "user1": {
+        "color_theme": "#FF6B6B",
+        "context_name": "User1_Context",
+        "incognito": true
+      },
+      "user2": {
+        "color_theme": "#4ECDC4", 
+        "context_name": "User2_Context",
+        "incognito": true
+      }
+    }
+  },
+  "steps": [
+    {
+      "id": "setup_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create temp instance for multi-context testing"
+    },
+    {
+      "id": "register_user1",
+      "type": "browser",
+      "action": "register_single_user_context",
+      "description": "Register user1 in isolated context (Red theme)",
+      "config": {
+        "user_context": "user1",
+        "user": {
+          "username": "ctxuser1",
+          "email": "ctx1@example.com",
+          "password": "TestPass123!"
+        },
+        "context_options": {
+          "color_scheme": "dark",
+          "viewport": {"width": 1200, "height": 800}
+        }
+      }
+    },
+    {
+      "id": "register_user2", 
+      "type": "browser",
+      "action": "register_single_user_context",
+      "description": "Register user2 in separate isolated context (Teal theme)",
+      "config": {
+        "user_context": "user2",
+        "user": {
+          "username": "ctxuser2",
+          "email": "ctx2@example.com",
+          "password": "TestPass123!"
+        },
+        "context_options": {
+          "color_scheme": "light",
+          "viewport": {"width": 1200, "height": 800}
+        }
+      }
+    },
+    {
+      "id": "verify_users_in_db",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify both users created with proper isolation",
+      "config": {
+        "queries": [
+          "SELECT id, username, email FROM users WHERE username IN ('ctxuser1', 'ctxuser2') ORDER BY username;",
+          "SELECT COUNT(*) as total_users FROM users;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "login_user1_isolated",
+      "type": "browser",
+      "action": "login_in_context",
+      "description": "Login user1 in their isolated context (Red theme)",
+      "config": {
+        "user_context": "user1",
+        "username": "ctxuser1",
+        "password": "TestPass123!",
+        "context_styling": {
+          "inject_css": "body { border: 5px solid #FF6B6B !important; background: linear-gradient(45deg, #FF6B6B11, transparent) !important; }"
+        },
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "login_user2_isolated",
+      "type": "browser", 
+      "action": "login_in_context",
+      "description": "Login user2 in their isolated context (Teal theme)",
+      "config": {
+        "user_context": "user2",
+        "username": "ctxuser2",
+        "password": "TestPass123!",
+        "context_styling": {
+          "inject_css": "body { border: 5px solid #4ECDC4 !important; background: linear-gradient(45deg, #4ECDC411, transparent) !important; }"
+        },
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "create_api_key_user1_context",
+      "type": "browser",
+      "action": "create_api_key_in_context",
+      "description": "Create API key for user1 in their isolated context",
+      "config": {
+        "user_context": "user1",
+        "key_name": "User1 Isolated Key",
+        "scopes": ["read:all", "write:all"],
+        "capture_secret": "user1_isolated_key",
+        "visual_indicator": "Red Border Context",
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "create_api_key_user2_context",
+      "type": "browser",
+      "action": "create_api_key_in_context", 
+      "description": "Create API key for user2 in their isolated context",
+      "config": {
+        "user_context": "user2",
+        "key_name": "User2 Isolated Key",
+        "scopes": ["read:all", "write:all"],
+        "capture_secret": "user2_isolated_key",
+        "visual_indicator": "Teal Border Context",
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "verify_context_isolation",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify API keys are properly attributed to users with context isolation",
+      "config": {
+        "queries": [
+          "SELECT k.key_id, k.description, u.username as owner, k.created_by FROM agent_api_keys k JOIN users u ON k.created_by = u.id WHERE u.username IN ('ctxuser1', 'ctxuser2') ORDER BY k.created_at DESC;",
+          "SELECT u.username, COUNT(k.key_id) as key_count FROM users u LEFT JOIN agent_api_keys k ON u.id = k.created_by WHERE u.username IN ('ctxuser1', 'ctxuser2') GROUP BY u.username;",
+          "SELECT 'Context Isolation Test' as test_type, COUNT(DISTINCT created_by) as unique_users FROM agent_api_keys WHERE created_by IN (SELECT id FROM users WHERE username IN ('ctxuser1', 'ctxuser2'));"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "test_simultaneous_contexts",
+      "type": "browser",
+      "action": "demonstrate_context_isolation",
+      "description": "Show both contexts side by side to demonstrate isolation",
+      "config": {
+        "show_both_contexts": true,
+        "user1_context": "user1",
+        "user2_context": "user2",
+        "demonstration_message": "Two separate browser contexts running simultaneously:\n- Red border: User1 (ctxuser1) \n- Teal border: User2 (ctxuser2)\nEach has separate cookies, sessions, and WebSocket connections",
+        "take_screenshot": true,
+        "wait_time": 5
+      }
+    },
+    {
+      "id": "final_isolation_verification",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Final verification of complete user isolation",
+      "config": {
+        "queries": [
+          "SELECT 'User Isolation Summary' as summary, u.username, u.id as user_id, COUNT(k.key_id) as api_keys FROM users u LEFT JOIN agent_api_keys k ON u.id = k.created_by WHERE u.username IN ('ctxuser1', 'ctxuser2') GROUP BY u.id ORDER BY u.username;",
+          "SELECT 'WebSocket Auth Ready' as status, k.key_id, u.username, k.description FROM agent_api_keys k JOIN users u ON k.created_by = u.id WHERE u.username IN ('ctxuser1', 'ctxuser2') ORDER BY u.username;",
+          "SELECT 'Context Separation Verified' as result, COUNT(DISTINCT created_by) as isolated_users, COUNT(*) as total_keys FROM agent_api_keys WHERE created_by IS NOT NULL;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    }
+  ]
+}

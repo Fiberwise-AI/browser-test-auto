@@ -1,0 +1,43 @@
+{
+  "script_name": "check_agent_activations_user_scoped",  
+  "description": "Check agent_activations table with user attribution for user-scoped WebSocket system",
+  "version": "1.0",
+  "settings": {
+    "headless": true,
+    "use_existing_instance": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "check_activations_with_users",
+      "type": "command", 
+      "action": "verify_database",
+      "description": "Check activation tables with user attribution for WebSocket isolation",
+      "config": {
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_160750_dca735f5\\local_data\\fiberwise.db",
+        "queries": [
+          "SELECT COUNT(*) as total_agent_activations FROM agent_activations;",
+          "SELECT activation_id, agent_id, status, created_by, created_at FROM agent_activations ORDER BY created_at DESC LIMIT 5;",
+          "SELECT u.username, u.email, COUNT(a.activation_id) as activation_count FROM users u LEFT JOIN agent_activations a ON u.id = a.created_by GROUP BY u.id ORDER BY activation_count DESC;",
+          "SELECT a.activation_id, a.status, u.username as activating_user, a.created_at FROM agent_activations a JOIN users u ON a.created_by = u.id ORDER BY a.created_at DESC LIMIT 3;",
+          "PRAGMA table_info(agent_activations);",
+          "SELECT COUNT(*) as total_activation_logs FROM activation_logs;",
+          "SELECT * FROM activation_logs ORDER BY created_at DESC LIMIT 2;"
+        ]
+      }
+    },
+    {
+      "id": "verify_user_agent_api_keys",
+      "type": "command",
+      "action": "verify_database", 
+      "description": "Verify agent API keys are properly attributed to users for WebSocket auth",
+      "config": {
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_160750_dca735f5\\local_data\\fiberwise.db",
+        "queries": [
+          "SELECT key_id, app_id, agent_id, created_by, description, created_at FROM agent_api_keys ORDER BY created_at DESC LIMIT 3;",
+          "SELECT u.username, COUNT(k.key_id) as api_key_count FROM users u LEFT JOIN agent_api_keys k ON u.id = k.created_by GROUP BY u.id ORDER BY api_key_count DESC;"
+        ]
+      }
+    }
+  ]
+}

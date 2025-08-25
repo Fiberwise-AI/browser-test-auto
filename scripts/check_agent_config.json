@@ -1,0 +1,27 @@
+{
+  "script_name": "check_agent_config",
+  "description": "Check agent configuration for missing file path",
+  "version": "1.0", 
+  "settings": {
+    "headless": true,
+    "use_existing_instance": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "check_agent_versions",
+      "type": "command",
+      "action": "verify_database", 
+      "description": "Check agent versions and file paths",
+      "config": {
+        "database_path": "C:\\Users\\david\\fiberwise\\fiberwise-browser-tests\\temp-instances\\test_20250807_160750_dca735f5\\local_data\\fiberwise.db",
+        "queries": [
+          "SELECT agent_id, name FROM agents WHERE name = 'chatAgent';",
+          "SELECT * FROM agent_versions WHERE agent_id IN (SELECT agent_id FROM agents WHERE name = 'chatAgent');",
+          "PRAGMA table_info(agent_versions);",
+          "SELECT activation_id, status, error FROM agent_activations ORDER BY created_at DESC LIMIT 3;"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,341 @@
+{
+  "script_name": "LLM Providers Page Test",
+  "description": "Comprehensive test for LLM providers page functionality including backend APIs",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": false,
+    "take_screenshots": false,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "create_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create isolated FiberWise instance for testing"
+    },
+    {
+      "id": "register_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user for LLM provider testing",
+      "config": {
+        "users": [
+          {
+            "username": "llmtestuser",
+            "email": "llmtest@example.com",
+            "password": "LLMTest123!"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_user_db",
+      "type": "command", 
+      "action": "verify_database",
+      "description": "Verify user creation in database",
+      "config": {
+        "queries": [
+          "SELECT username, email FROM users WHERE username = 'llmtestuser';",
+          "SELECT COUNT(*) as user_count FROM users;"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login", 
+      "description": "Login with test user",
+      "config": {
+        "username": "llmtest@example.com",
+        "password": "LLMTest123!",
+        "keep_page_open": true
+      }
+    },
+    {
+      "id": "navigate_to_llm_providers",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to LLM providers settings page",
+      "config": {
+        "url": "/settings/llm-providers",
+        "keep_page_open": true,
+        "expected_elements": [
+          "h1:has-text('LLM Providers')",
+          "button:has-text('Add Provider')",
+          ".provider-card, .no-providers-message"
+        ]
+      }
+    },
+    {
+      "id": "test_add_provider_modal",
+      "type": "browser",
+      "action": "interact_with_elements",
+      "description": "Test Add Provider button and form display",
+      "config": {
+        "interactions": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Add Provider')",
+            "description": "Click Add Provider button"
+          },
+          {
+            "action": "wait",
+            "duration": 2000,
+            "description": "Wait for form to appear"
+          },
+          {
+            "action": "wait_for_element",
+            "selector": ".provider-form, form",
+            "timeout": 5000,
+            "description": "Wait for provider form to appear"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_default_provider_creation",
+      "type": "browser",
+      "action": "interact_with_elements",
+      "description": "Test creating provider using default configuration",
+      "config": {
+        "interactions": [
+          {
+            "action": "fill",
+            "selector": "input[name='name'], input#provider-name",
+            "value": "Default OpenAI Provider",
+            "description": "Fill provider name"
+          },
+          {
+            "action": "select",
+            "selector": "select[name='provider_type'], select#provider-type",
+            "value": "openai",
+            "description": "Select OpenAI provider type"
+          },
+          {
+            "action": "wait",
+            "duration": 2000,
+            "description": "Wait for default configuration to load"
+          },
+          {
+            "action": "fill",
+            "selector": "input[name='api_key'], input#api-key",
+            "value": "sk-test123456789abcdef",
+            "description": "Fill test API key"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_defaults_api_call",
+      "type": "command",
+      "action": "api_test",
+      "description": "Test that default provider configurations are accessible via API",
+      "config": {
+        "method": "GET",
+        "url": "http://localhost:{{port}}/api/v1/llm-provider-defaults",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "expected_status": 200,
+        "response_checks": [
+          {
+            "path": "$.openai.base_url",
+            "expected": "https://api.openai.com/v1"
+          },
+          {
+            "path": "$.openai.models",
+            "contains": "gpt-4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "save_default_provider",
+      "type": "browser",
+      "action": "interact_with_elements",
+      "description": "Save the default provider configuration",
+      "config": {
+        "interactions": [
+          {
+            "action": "click",
+            "selector": "button:has-text('Save'), button:has-text('Create Provider'), button[type='submit']",
+            "description": "Save provider"
+          },
+          {
+            "action": "wait",
+            "duration": 3000,
+            "description": "Wait for save to complete"
+          },
+          {
+            "action": "wait_for_element",
+            "selector": ".provider-card:has-text('Default OpenAI Provider'), .provider-item:has-text('Default OpenAI Provider')",
+            "timeout": 8000,
+            "description": "Wait for provider to appear in list"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_default_provider_in_db",
+      "type": "command",
+      "action": "verify_database", 
+      "description": "Verify default provider was saved with correct configuration",
+      "config": {
+        "queries": [
+          "SELECT name, provider_type, base_url, created_at FROM llm_providers WHERE name = 'Default OpenAI Provider';",
+          "SELECT COUNT(*) as provider_count FROM llm_providers;",
+          "SELECT provider_defaults FROM llm_provider_defaults WHERE provider_type = 'openai';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "test_default_provider_actions",
+      "type": "browser",
+      "action": "interact_with_elements",
+      "description": "Test basic provider display",
+      "config": {
+        "interactions": [
+          {
+            "action": "wait_for_element",
+            "selector": ".provider-card:has-text('Default OpenAI Provider'), .provider-item:has-text('Default OpenAI Provider')",
+            "timeout": 3000,
+            "description": "Verify provider is displayed"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_default_api_key_masking",
+      "type": "browser",
+      "action": "verify_elements",
+      "description": "Verify API key is properly masked in default provider UI",
+      "config": {
+        "verifications": [
+          {
+            "selector": ".provider-card:has-text('Default OpenAI Provider') .api-key-display",
+            "expected_pattern": "sk-.*\\*{4,}",
+            "description": "API key should be masked"
+          },
+          {
+            "selector": ".provider-card:has-text('Default OpenAI Provider')",
+            "not_contains": "sk-test123456789abcdef",
+            "description": "Full API key should not be visible"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_default_provider_model_management",
+      "type": "browser",
+      "action": "interact_with_elements",
+      "description": "Test model management for default provider",
+      "config": {
+        "interactions": [
+          {
+            "action": "click",
+            "selector": ".provider-card:has-text('Default OpenAI Provider') .manage-models-btn",
+            "description": "Click manage models button"
+          },
+          {
+            "action": "wait_for_element",
+            "selector": ".models-panel:visible",
+            "timeout": 5000,
+            "description": "Wait for models panel"
+          },
+          {
+            "action": "screenshot",
+            "description": "Capture models management panel"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_default_models",
+      "type": "browser",
+      "action": "verify_elements",
+      "description": "Verify default models are available",
+      "config": {
+        "verifications": [
+          {
+            "selector": ".model-item:has-text('gpt-4')",
+            "should_exist": true,
+            "description": "GPT-4 model should be available"
+          },
+          {
+            "selector": ".model-item:has-text('gpt-3.5-turbo')",
+            "should_exist": true,
+            "description": "GPT-3.5-turbo model should be available"
+          },
+          {
+            "selector": ".default-model-indicator",
+            "should_exist": true,
+            "description": "Default model should be indicated"
+          }
+        ]
+      }
+    },
+    {
+      "id": "test_default_provider_deletion",
+      "type": "browser",
+      "action": "interact_with_elements",
+      "description": "Test default provider deletion functionality",
+      "config": {
+        "interactions": [
+          {
+            "action": "click",
+            "selector": ".provider-card:has-text('Default OpenAI Provider') .dropdown-toggle",
+            "description": "Open provider actions menu"
+          },
+          {
+            "action": "click",
+            "selector": ".dropdown-menu .delete-provider",
+            "description": "Click delete option"
+          },
+          {
+            "action": "wait_for_element",
+            "selector": ".confirmation-dialog:visible",
+            "timeout": 3000,
+            "description": "Wait for confirmation dialog"
+          },
+          {
+            "action": "screenshot",
+            "description": "Capture deletion confirmation"
+          },
+          {
+            "action": "click",
+            "selector": ".confirmation-dialog button:has-text('Confirm')",
+            "description": "Confirm deletion"
+          }
+        ]
+      }
+    },
+    {
+      "id": "verify_default_provider_deleted",
+      "type": "command",
+      "action": "verify_database",
+      "description": "Verify default provider was deleted from database",
+      "config": {
+        "queries": [
+          "SELECT COUNT(*) as remaining_providers FROM llm_providers WHERE name = 'Default OpenAI Provider';",
+          "SELECT COUNT(*) as total_providers FROM llm_providers;",
+          "SELECT provider_type, provider_defaults FROM llm_provider_defaults WHERE provider_type = 'openai';"
+        ],
+        "database_path": "{{instance_dir}}/local_data/fiberwise.db"
+      }
+    },
+    {
+      "id": "final_screenshot",
+      "type": "browser",
+      "action": "take_screenshot",
+      "description": "Final screenshot of LLM providers page",
+      "config": {
+        "keep_page_open": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "script_name": "test_agents_list_page_working",
+  "description": "Test working components of the agents list page - simplified version focusing on functional features",
+  "version": "1.0",
+  "settings": {
+    "headless": false,
+    "use_temp_instance": true,
+    "video_recording": true,
+    "take_screenshots": true,
+    "auto_cleanup": false
+  },
+  "steps": [
+    {
+      "id": "setup_instance",
+      "type": "instance",
+      "action": "create_temp_instance",
+      "description": "Create and start temporary FiberWise instance for testing"
+    },
+    {
+      "id": "verify_instance_ready",
+      "type": "command",
+      "action": "verify_instance_status",
+      "description": "Verify that the instance is properly running and accessible",
+      "config": {
+        "check_web_server": true,
+        "check_api_endpoints": true,
+        "timeout": 30
+      }
+    },
+    {
+      "id": "register_test_user",
+      "type": "browser",
+      "action": "register_multiple_users",
+      "description": "Register test user for agents page testing",
+      "config": {
+        "headless": true,
+        "users": [
+          {
+            "username": "agent_tester",
+            "email": "agent_test@example.com",
+            "password": "AgentTest123!",
+            "first_name": "Agent",
+            "last_name": "Tester"
+          }
+        ]
+      }
+    },
+    {
+      "id": "login_user",
+      "type": "browser",
+      "action": "test_login",
+      "description": "Login with test user credentials",
+      "config": {
+        "username": "agent_tester",
+        "password": "AgentTest123!",
+        "keep_page_open": true,
+        "take_screenshot": true
+      }
+    },
+    {
+      "id": "navigate_to_agents",
+      "type": "browser",
+      "action": "navigate_and_verify",
+      "description": "Navigate to the agents list page",
+      "config": {
+        "url": "/agents",
+        "take_screenshot": true,
+        "keep_page_open": true,
+        "wait_for_selector": "agent-list-page",
+        "timeout": 10000
+      }
+    },
+    {
+      "id": "show_browser_state",
+      "type": "browser",
+      "action": "show_browser",
+      "description": "Display current browser state and keep it open for inspection",
+      "config": {
+        "keep_open": true,
+        "take_screenshot": true,
+        "pause_duration": 5000
+      }
+    },
+    {
+      "id": "take_final_screenshot",
+      "type": "browser",
+      "action": "take_screenshot", 
+      "description": "Capture final state of the agents page",
+      "config": {
+        "filename": "final_agents_page_state.png"
+      }
+    },
+    {
+      "id": "analyze_logs",
+      "type": "command",
+      "action": "analyze_server_logs",
+      "description": "Analyze server logs for any issues during the test",
+      "config": {
+        "log_types": ["error", "warning", "info"],
+        "check_auth_patterns": true,
+        "check_api_patterns": true,
+        "include_performance": true,
+        "generate_summary": true
+      }
+    }
+  ]
+}
